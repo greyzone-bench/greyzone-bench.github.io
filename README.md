@@ -1,10 +1,12 @@
 # GreyZone Leaderboard
 
-Public leaderboard site for the GreyZone benchmark (formerly AgentThreatDataset). This repository
-holds **only** the site: the page, the results data, and the sync tooling —
-static, data-driven, no frameworks, no build step, no server. The dataset
-itself (10 threat ranges, victim applications, oracles) lives in the separate,
-currently-private dataset repository and is released with the paper.
+Public leaderboard site for the GreyZone benchmark (formerly AgentThreatDataset):
+**https://greyzone-bench.github.io/**. This repository (`greyzone-bench.github.io`,
+the org's root Pages repo) holds **only** the site: the page, the results data,
+and the sync tooling — static, data-driven, no frameworks, no build step, no
+server. The dataset itself (10 threat ranges, victim applications, oracles)
+lives in the separate, currently-private dataset repository and is released
+with the paper.
 
 ```
 index.html                    # the page (inline CSS/JS, zero dependencies)
@@ -35,9 +37,9 @@ python3 -m http.server 8099
 
 ## Publishing to GitHub Pages
 
-Repo → Settings → Pages → Deploy from a branch → `main` / root. The site then
-lives at `https://<org>.github.io/<repo>/` and updates on every push — no CI
-workflow required.
+This repo is the org's root Pages repo (`greyzone-bench.github.io`), so Pages
+serves it at the org root automatically — every push to `main` updates the
+live site within about a minute, no CI workflow required.
 
 ## Syncing catalog data from the dataset
 
