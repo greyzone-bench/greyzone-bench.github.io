@@ -47,7 +47,7 @@ def main() -> int:
     ap.add_argument(
         "--dataset",
         type=Path,
-        default=here.parent.parent / "AgentThreatDataset",
+        default=here.parent.parent / "AgentThreatDataset",  # local dataset checkout (pre-rename name)
         help="path to the dataset checkout (default: sibling of this repo)",
     )
     args = ap.parse_args()

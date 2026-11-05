@@ -1,6 +1,6 @@
-# AgentThreatDataset Leaderboard
+# GreyZone Leaderboard
 
-Public leaderboard site for the AgentThreatDataset benchmark. This repository
+Public leaderboard site for the GreyZone benchmark (formerly AgentThreatDataset). This repository
 holds **only** the site: the page, the results data, and the sync tooling —
 static, data-driven, no frameworks, no build step, no server. The dataset
 itself (10 threat ranges, victim applications, oracles) lives in the separate,
