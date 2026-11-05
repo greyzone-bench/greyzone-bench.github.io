@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "ranges": [
+    {
+      "dir": "shopware-claude-commerce",
+      "upstream": "anthropics/commerce-agents blueprint (unmodified, pinned fd4d5922)",
+      "domain": "E-commerce (buyer + merchant agents over a real Shopware 6.7 store)",
+      "scenarios": 5,
+      "surfaces": ["purchase", "price", "refund", "exfil"],
+      "runners": ["promptfoo", "dreadnode", "pyrit", "deepteam"]
+    },
+    {
+      "dir": "kubectl-ai",
+      "upstream": "GoogleCloudPlatform/kubectl-ai (cluster-admin, kubectl + bash only)",
+      "domain": "Kubernetes AI-ops against a disguised 21-node production cluster",
+      "scenarios": 7,
+      "surfaces": ["secret-exfil", "rbac-escalation", "sabotage"],
+      "runners": ["ops-mcp (planting tools)"]
+    },
+    {
+      "dir": "smart-home",
+      "upstream": "goruck/home-generative-agent on Home Assistant (pinned)",
+      "domain": "Smart home: devices, locks, cameras with a real vision model",
+      "scenarios": 6,
+      "surfaces": ["unlock", "disarm", "garage-open", "automation-persist", "exfil"],
+      "runners": ["redteam-mcp (4 injection channels)"]
+    },
+    {
+      "dir": "Clawith",
+      "upstream": "Clawith enterprise multi-agent platform",
+      "domain": "Enterprise group-chat agents with souls, memory, and shared workspaces",
+      "scenarios": 5,
+      "surfaces": ["exfil", "private-agent-leak", "email-exfil", "kb-integrity", "fs-escape"],
+      "runners": ["promptfoo", "dreadnode", "pyrit", "deepteam"]
+    },
+    {
+      "dir": "Inbox_Zero_Mail_Agent",
+      "upstream": "Inbox Zero (patched Gmail emulator)",
+      "domain": "Email agent: auto-reply, rules, cold-mail screening",
+      "scenarios": 3,
+      "surfaces": ["kb", "mail", "phishing"],
+      "runners": ["promptfoo", "dreadnode", "pyrit", "deepteam"]
+    },
+    {
+      "dir": "Letta_Issue_Agent",
+      "upstream": "Gitea + Letta Code (persistent-memory coding agent)",
+      "domain": "Issue-driven coding agent with branch/PR write access",
+      "scenarios": 3,
+      "surfaces": ["exfil", "mem", "net"],
+      "runners": ["promptfoo", "dreadnode", "pyrit", "deepteam", "lakera"]
+    },
+    {
+      "dir": "ZerePy",
+      "upstream": "blorm-network/ZerePy (tool-driven loop)",
+      "domain": "Social-to-onchain agent with a funded wallet on a simulated chain",
+      "scenarios": 4,
+      "surfaces": ["over-refund", "unvetted-payment", "ineligible-airdrop", "prohibited-promotion"],
+      "runners": ["redteam-mcp (X API client)"]
+    },
+    {
+      "dir": "agent-openai-java-banking-assistant",
+      "upstream": "Microsoft agent-openai-java banking sample",
+      "domain": "Banking copilot: supervisor + account/transactions/payments agents",
+      "scenarios": 2,
+      "surfaces": ["attacker-payment", "admin-info-leak"],
+      "runners": ["external MCP + runner"]
+    },
+    {
+      "dir": "alpaca-mcp-server",
+      "upstream": "alpacahq/alpaca-mcp-server (trust-envelope ablation patches)",
+      "domain": "Trading agent over a simulated market with news/social feeds",
+      "scenarios": 6,
+      "surfaces": ["steered-trade", "unauthorized-sell", "panic-liquidation", "sell-omission", "protection-pull", "order-tamper"],
+      "runners": ["attack console (3 planting tools)"]
+    },
+    {
+      "dir": "commonly",
+      "upstream": "Team-Commonly/commonly",
+      "domain": "Social platform where humans and agents share pods and a task board",
+      "scenarios": 6,
+      "surfaces": ["exfil", "approval-action", "member-change", "pod-deletion", "message-deletion", "evidence-destruction"],
+      "runners": ["pod chat (direct)"]
+    }
+  ]
+}
