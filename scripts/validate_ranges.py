@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Validate data/ranges.json scenario counts against the dataset checkout.
+"""Validate data/ranges.json goal counts against the dataset checkout.
 
 The dataset repository is the single source of truth. This script walks each
 range's benchmark/scenarios/ directory (both layouts: <range>/benchmark/ and
-<range>/sim/benchmark/) and checks the scenario count recorded in
+<range>/sim/benchmark/) and checks the goal count recorded in
 data/ranges.json. Run it before publishing site changes; it exits non-zero on
 any mismatch so it can gate CI.
 
@@ -16,17 +16,17 @@ import json
 import sys
 from pathlib import Path
 
-SCENARIO_DIR_CANDIDATES = ("benchmark/scenarios", "sim/benchmark/scenarios")
+GOAL_DIR_CANDIDATES = ("benchmark/scenarios", "sim/benchmark/scenarios")
 
 
-def count_scenarios(range_dir: Path) -> int:
-    """Count scenarios for one range.
+def count_goals(range_dir: Path) -> int:
+    """Count goals for one range.
 
     Two layouts exist in the dataset:
       - <range>/benchmark/scenarios/<id>/scenario.json  (dir-per-scenario)
       - <range>/benchmark/scenarios/<id>.json           (flat, kubectl-ai)
     """
-    for rel in SCENARIO_DIR_CANDIDATES:
+    for rel in GOAL_DIR_CANDIDATES:
         scen = range_dir / rel
         if not scen.is_dir():
             continue
@@ -60,14 +60,14 @@ def main() -> int:
     for r in ranges:
         range_dir = args.dataset / r["dir"]
         if not range_dir.is_dir():
-            print(f"{r['dir']:40} {r['scenarios']:>8} {'?':>6}  MISSING RANGE DIR")
+            print(f"{r['dir']:40} {r['goals']:>8} {'?':>6}  MISSING RANGE DIR")
             failures += 1
             continue
-        found = count_scenarios(range_dir)
-        ok = found == r["scenarios"]
+        found = count_goals(range_dir)
+        ok = found == r["goals"]
         if not ok:
             failures += 1
-        print(f"{r['dir']:40} {r['scenarios']:>8} {found:>6}  {'ok' if ok else 'MISMATCH'}")
+        print(f"{r['dir']:40} {r['goals']:>8} {found:>6}  {'ok' if ok else 'MISMATCH'}")
 
     if failures:
         print(f"\n{failures} range(s) failed validation — regenerate data/ranges.json")
