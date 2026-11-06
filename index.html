@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GreyZone — Red-Team Leaderboard</title>
-<meta name="description" content="A benchmark of 10 threat ranges for red-teaming LLM agents in real applications. Mechanical oracles — no model judges a model.">
+<meta name="description" content="A benchmark of 10 threat ranges for red-teaming LLM agents in real applications.">
 <style>
   /* Design language follows the SWE-bench leaderboard family: off-white page,
      blue accent, card tables with sticky uppercase headers, tabular numerals. */
@@ -98,6 +98,18 @@
     color: rgba(255, 247, 236, 0.8);
   }
   .header-sub em { font-style: normal; font-weight: 600; color: var(--header-cream); }
+  .hero-links { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.25rem; }
+  .hero-links a {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.45rem 1.1rem;
+    border: 1px solid rgba(255, 247, 236, 0.5);
+    border-radius: var(--radius-full);
+    background: rgba(0, 0, 0, 0.14);
+    color: var(--header-cream);
+    font-size: 0.875rem; font-weight: 600;
+    transition: background 0.1s ease, border-color 0.1s ease;
+  }
+  .hero-links a:hover { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 247, 236, 0.8); color: #fff; }
   .stats { display: flex; flex-wrap: wrap; gap: 2.25rem; margin-top: 1.5rem; }
   .stat b {
     display: block;
@@ -359,16 +371,20 @@
         <a href="#taxonomy">Taxonomy</a>
         <a href="#ranges">Ranges</a>
         <a href="#submit">Submit</a>
-        <a href="https://github.com/greyzone-bench" target="_blank" rel="noopener">GitHub&nbsp;↗</a>
       </div>
     </nav>
     <h1>Red-Team Leaderboard</h1>
-    <p class="header-sub">Automated red-teaming services, evaluated end-to-end against real upstream agent applications — every outcome verified by a mechanical oracle. <em>No model judges a model.</em></p>
+    <p class="header-sub">Automated red-teaming services, evaluated end-to-end against real upstream agent applications — every outcome verified by a mechanical oracle.</p>
+    <div class="hero-links">
+      <a href="paper.pdf" target="_blank" rel="noopener">Paper</a>
+      <a href="https://github.com/Ruoyyy/GreyZone" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/Ruoyyy/GreyZone" target="_blank" rel="noopener">Dataset</a>
+    </div>
     <div class="stats">
-      <div class="stat"><b>10</b><span>threat ranges</span></div>
-      <div class="stat"><b>46</b><span>goals</span></div>
-      <div class="stat"><b>41</b><span>oracle surfaces</span></div>
-      <div class="stat"><b>0</b><span>LLM judges</span></div>
+      <div class="stat"><b id="stat-ranges">10</b><span>threat ranges</span></div>
+      <div class="stat"><b id="stat-goals">46</b><span>goals</span></div>
+      <div class="stat"><b id="stat-surfaces">39</b><span>oracle surfaces</span></div>
+      <div class="stat"><b id="stat-channels">21</b><span>injection channels</span></div>
     </div>
   </div>
 </header>
@@ -469,7 +485,7 @@
     <div class="col">
       <b>GreyZone</b>
       A benchmark of 10 threat ranges for red-teaming LLM agents in real applications.<br>
-      Repository: <a href="https://github.com/greyzone-bench" style="color:inherit">github.com/greyzone-bench</a><br><br>
+      Repository: <a href="https://github.com/Ruoyyy/GreyZone" style="color:inherit">github.com/Ruoyyy/GreyZone</a><br><br>
       Each victim application retains its upstream license; see the per-range attribution notes.
     </div>
     <div class="col">
@@ -596,7 +612,7 @@ const TAXONOMY = [
   "Exfiltration — secrets, credentials, private state leaving the boundary",
   "Financial fraud — unauthorized payments, refunds, trades, price manipulation",
   "Authorization abuse — forged authority, privilege escalation, sandbox escape",
-  "Integrity & sabotage — KB/memory poisoning, persistent automations, deployment disruption",
+  "Integrity & sabotage — KB/memory poisoning, data tampering, deployment disruption",
   "Propagation & impersonation — phishing outbound, fake identities, token promotion",
 ];
 function renderTaxonomy() {
@@ -606,6 +622,16 @@ function renderTaxonomy() {
     const rest = i > 0 ? t.slice(i).replace(/^\s*—\s*/, "") : "";
     return `<div class="tcard"><b>${esc(name)}</b><span>${esc(rest)}</span></div>`;
   }).join("");
+}
+
+/* ---------- header stats (derived from ranges.json at boot) ---------- */
+function renderStats(d) {
+  const chans = new Set();
+  d.ranges.forEach(r => (r.channels || []).forEach(c => chans.add(c)));
+  document.getElementById("stat-ranges").textContent = d.ranges.length;
+  document.getElementById("stat-goals").textContent = d.ranges.reduce((s, r) => s + r.goals, 0);
+  document.getElementById("stat-surfaces").textContent = d.ranges.reduce((s, r) => s + r.surfaces.length, 0);
+  document.getElementById("stat-channels").textContent = chans.size;
 }
 
 /* ---------- range catalog ---------- */
@@ -635,6 +661,7 @@ function renderRanges(data) {
     document.getElementById("result-count").textContent = RESULTS.length ? `· ${RESULTS.length} campaigns` : "";
     renderResults();
     renderRanges(ranges);
+    renderStats(ranges);
   } catch (err) {
     document.getElementById("results").insertAdjacentHTML("afterbegin",
       `<p class="error">Failed to load data (${esc(err.message)}). If you opened this file directly, serve it over HTTP instead: <code>python3 -m http.server</code></p>`);

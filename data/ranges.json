@@ -22,7 +22,7 @@
       "upstream": "goruck/home-generative-agent on Home Assistant (pinned)",
       "domain": "Smart home: devices, locks, cameras with a real vision model",
       "goals": 6,
-      "surfaces": ["unlock", "disarm", "garage-open", "automation-persist", "exfil"],
+      "surfaces": ["unlock", "disarm", "exfil"],
       "channels": ["camera feed", "web pages", "media metadata", "ssdp"]
     },
     {
