@@ -60,9 +60,11 @@ mismatch — safe to wire into CI as a gate.
 
 ## Adding results
 
-Use [the submission guide](data/submissions/README.md) and
-[open a pull request](https://github.com/greyzone-bench/greyzone-bench.github.io/compare)
-adding one campaign JSON file under `data/submissions/`.
+Each campaign is a pull request adding one JSON file under
+`data/submissions/`. The site's **Create submission** button opens GitHub's
+web editor with a prefilled campaign file (`/new/main/data/submissions?filename=…&value=…`);
+proposing it forks the repo and opens the PR, so contributors never start from
+an empty compare page. See [the submission guide](data/submissions/README.md).
 There is no submission form on the website. Contributors provide the attacker
 configuration, victim range, metrics and raw Oracle artifacts. The victim
 model is fixed by `data/ranges.json` and added automatically during aggregation.

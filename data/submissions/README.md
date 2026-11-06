@@ -1,9 +1,16 @@
 # Submit an evaluation campaign
 
-1. Fork this repository and create a branch.
-2. Add one JSON file under `data/submissions/`, such as `your-lab-pyrit-shopware-2026-12-01.json`.
-3. Push the branch and [open a pull request](https://github.com/greyzone-bench/greyzone-bench.github.io/compare).
-   Choose **compare across forks** and select your branch when necessary.
+**In the browser (recommended).** Click **Create submission** on the
+[leaderboard](https://greyzone-bench.github.io/#submit). GitHub opens a
+prefilled campaign file under `data/submissions/`; rename it, replace the
+example values, then choose **Commit changes… → Propose changes → Create pull
+request**. GitHub forks the repository for you and applies the pull request
+template.
+
+**With git.** Fork this repository, add one JSON file under
+`data/submissions/` on a branch, push it and
+[open a pull request](https://github.com/greyzone-bench/greyzone-bench.github.io/compare)
+(choose **compare across forks** and select your branch).
 
 Use a filename containing lowercase letters, digits and hyphens. It is the
 campaign's stable ID; edit the same file to correct a campaign. Copy this format:

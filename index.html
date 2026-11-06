@@ -384,7 +384,7 @@
         <a href="#results">Leaderboard</a>
         <a href="#taxonomy">Taxonomy</a>
         <a href="#ranges">Ranges</a>
-        <a href="https://github.com/greyzone-bench/greyzone-bench.github.io/compare" target="_blank" rel="noopener">Submit ↗</a>
+        <a href="#submit">Submit</a>
       </div>
     </nav>
     <h1>Red-Team Leaderboard</h1>
@@ -487,15 +487,15 @@
       </div>
     </div>
     <ol class="steps">
-      <li>Run the benchmark with the official victim configuration and collect raw Oracle artifacts.</li>
-      <li>In your fork, add one campaign file under <code>data/submissions/</code> using the <a href="https://github.com/greyzone-bench/greyzone-bench.github.io/blob/main/data/submissions/README.md" target="_blank" rel="noopener">submission format</a>.</li>
-      <li>Open a pull request from your branch. Choose the victim range; its model is fixed by the benchmark and supplied automatically.</li>
+      <li>Run the benchmark with the official victim configuration and publish the raw Oracle artifacts (<code>.run/oracle/result-&lt;N&gt;.json</code>).</li>
+      <li>Click <b>Create submission</b>. GitHub opens a prefilled campaign file under <code>data/submissions/</code>: rename it (lowercase letters, digits, hyphens) and replace the example values. <code>victim.range</code> is a name from the <a href="#ranges">range catalog</a>; its model is fixed by the benchmark and supplied automatically.</li>
+      <li>Click <b>Commit changes…</b> → <b>Propose changes</b> → <b>Create pull request</b>. GitHub forks the repository for you; fill in the pull request template.</li>
     </ol>
     <div class="submit-actions">
-      <a class="btn btn-primary" href="https://github.com/greyzone-bench/greyzone-bench.github.io/compare" target="_blank" rel="noopener">Open a pull request ↗</a>
+      <a class="btn btn-primary" data-submit href="https://github.com/greyzone-bench/greyzone-bench.github.io/new/main/data/submissions" target="_blank" rel="noopener">Create submission ↗</a>
       <a href="https://github.com/greyzone-bench/greyzone-bench.github.io/blob/main/data/submissions/README.md" target="_blank" rel="noopener">Submission guide</a>
     </div>
-    <p class="submit-note">Include your attacker configuration, evaluation metrics, and links to raw episode artifacts. Maintainers review the evidence before merging results.</p>
+    <p class="submit-note">Maintainers review the raw episode artifacts before merging results. Prefer git? Fork, add the file on a branch and open a pull request as usual.</p>
   </section>
 
 </main>
@@ -595,7 +595,7 @@ function renderResults() {
   const body = document.getElementById("results-body");
   if (!RESULTS.length) {
     const n = cols.length;
-    body.innerHTML = `<tr class="no-results"><td colspan="${n}">No results yet — the first evaluation campaigns are running.<br><br><a class="cta" href="https://github.com/greyzone-bench/greyzone-bench.github.io/compare" target="_blank" rel="noopener">Submit results via pull request ↗</a></td></tr>`;
+    body.innerHTML = `<tr class="no-results"><td colspan="${n}">No results yet — the first evaluation campaigns are running.<br><br><a class="cta" href="#submit">Submit results via pull request</a></td></tr>`;
     return;
   }
   const sorted = [...RESULTS].sort((a, b) => {
@@ -644,6 +644,27 @@ function renderTaxonomy() {
   }).join("");
 }
 
+/* ---------- submission link (GitHub's web editor with a prefilled campaign file) ---------- */
+const SUBMIT_TEMPLATE = `{
+  "attacker": { "framework": "pyrit", "model": "your-attacker-model" },
+  "victim": { "range": "shopware-claude-commerce" },
+  "episodes": 15,
+  "asr": 0.53,
+  "authenticity": 0.71,
+  "controlFalsePositive": 0.0,
+  "noReplyRate": 0.13,
+  "submittedBy": "your-lab",
+  "date": "2026-12-01",
+  "artifacts": "https://example.org/your-lab/episode-artifacts"
+}
+`;
+function renderSubmitLinks() {
+  const url = "https://github.com/greyzone-bench/greyzone-bench.github.io/new/main/data/submissions" +
+    "?filename=" + encodeURIComponent("your-lab-pyrit-shopware-2026-12-01.json") +
+    "&value=" + encodeURIComponent(SUBMIT_TEMPLATE);
+  document.querySelectorAll("a[data-submit]").forEach(a => { a.href = url; });
+}
+
 /* ---------- header stats (derived from ranges.json at boot) ---------- */
 function renderStats(d) {
   const chans = new Set();
@@ -671,6 +692,7 @@ function renderRanges(data) {
 /* ---------- boot ---------- */
 (async () => {
   renderTaxonomy();
+  renderSubmitLinks();
   try {
     const [results, ranges] = await Promise.all([
       loadJSON("data/results.json"),
