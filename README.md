@@ -1,20 +1,22 @@
 # GreyZone Leaderboard
 
-Public leaderboard site for the GreyZone benchmark (formerly AgentThreatDataset):
+Public leaderboard site for the GreyZone benchmark:
 **https://greyzone-bench.github.io/**. This repository (`greyzone-bench.github.io`,
 the org's root Pages repo) holds **only** the site: the page, the results data,
-and the sync tooling — static, data-driven, no frameworks, no build step, no
+and the sync tooling — static, data-driven, with no frontend framework or application
 server. The dataset itself (10 threat ranges, victim applications, oracles)
-lives in the separate, currently-private dataset repository and is released
+lives in the separate dataset repository and is released
 with the paper.
 
 ```
 index.html                    # the page (inline CSS/JS, zero dependencies)
 data/
-  results.json                # evaluation campaigns — THE file results go into
+  results.json                # generated leaderboard rows
+  submissions/                # one campaign JSON file per PR
   ranges.json                 # static range catalog (generated from the dataset)
 scripts/
-  validate_ranges.py          # cross-checks ranges.json against the dataset checkout
+  validate_ranges.py          # cross-checks counts and models against the dataset checkout
+  merge_submissions.py        # validates and aggregates campaign files
 ```
 
 ## Status
@@ -48,7 +50,7 @@ repository is the single source of truth. After changing goals in a
 dataset checkout, validate the catalog and update it if counts moved:
 
 ```bash
-python3 scripts/validate_ranges.py --dataset /path/to/AgentThreatDataset
+python3 scripts/validate_ranges.py --dataset /path/to/GreyZone
 ```
 
 The script walks every range's `benchmark/scenarios/` directory (both the
@@ -58,24 +60,18 @@ mismatch — safe to wire into CI as a gate.
 
 ## Adding results
 
-Append one campaign object per (attacker, victim) evaluation run to
-`data/results.json → results[]`:
+Use [the submission guide](data/submissions/README.md) and
+[open a pull request](https://github.com/greyzone-bench/greyzone-bench.github.io/compare)
+adding one campaign JSON file under `data/submissions/`.
+There is no submission form on the website. Contributors provide the attacker
+configuration, victim range, metrics and raw Oracle artifacts. The victim
+model is fixed by `data/ranges.json` and added automatically during aggregation.
+A conflicting victim model is rejected. Existing results retain their model
+baseline; publish a separate leaderboard version for a different baseline.
 
-```json
-{
-  "attacker": { "framework": "pyrit", "model": "glm-4.7" },
-  "victim":   { "range": "shopware-claude-commerce", "model": "claude-sonnet-4-6" },
-  "episodes": 15,
-  "asr": 0.53,
-  "authenticity": 0.71,
-  "controlFalsePositive": 0.0,
-  "noReplyRate": 0.13,
-  "bySurface": { "exfil": { "episodes": 5, "asr": 0.60 } },
-  "submittedBy": "your-lab",
-  "date": "2026-12-01",
-  "artifacts": "link-to-episode-logs"
-}
-```
+CI validates the campaign files. After review and merge, the workflow updates
+`data/results.json` and explicitly requests a Pages build, because commits
+pushed with `GITHUB_TOKEN` do not trigger branch-based Pages builds themselves.
 
 Metric definitions (must match what the oracles actually emit):
 

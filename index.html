@@ -304,24 +304,25 @@
   }
 
   /* ---------- submit ---------- */
+  .submit-actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border); border-radius: var(--radius-md);
+    background: var(--bg); color: var(--text-secondary);
+    font: inherit; font-size: 0.875rem; font-weight: 500;
+    cursor: pointer; text-decoration: none;
+    transition: border-color 0.1s ease, color 0.1s ease, background 0.1s ease;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--blue-700); border-color: var(--blue-700); color: #fff; }
   .steps { margin: 0 0 1rem; padding-left: 1.25rem; }
   .steps li { margin-bottom: 0.5rem; font-size: 0.9375rem; line-height: 1.6; }
   .steps code, .submit-note code, p.sub code {
     font-family: var(--mono); font-size: 0.8125rem;
     background: var(--gray-100); padding: 0.05rem 0.3rem; border-radius: 4px;
   }
-  pre.schema {
-    margin: 0 0 0.75rem;
-    padding: 1rem 1.25rem;
-    background: var(--gray-50);
-    border: 1px solid var(--border); border-radius: var(--radius-lg);
-    font-family: var(--mono); font-size: 0.8125rem; line-height: 1.6;
-    overflow-x: auto;
-    color: var(--text-secondary);
-  }
-  pre.schema .k { color: var(--blue-700); }
-  pre.schema .s { color: var(--green-600); }
-  pre.schema .n { color: var(--text); }
   .submit-note { margin: 0; font-size: 0.875rem; color: var(--text-muted); }
 
   /* ---------- footer ---------- */
@@ -383,7 +384,7 @@
         <a href="#results">Leaderboard</a>
         <a href="#taxonomy">Taxonomy</a>
         <a href="#ranges">Ranges</a>
-        <a href="#submit">Submit</a>
+        <a href="https://github.com/greyzone-bench/greyzone-bench.github.io/compare" target="_blank" rel="noopener">Submit ↗</a>
       </div>
     </nav>
     <h1>Red-Team Leaderboard</h1>
@@ -482,24 +483,19 @@
     <div class="section-head">
       <div>
         <h2>Submit results</h2>
-        <p class="sub">The leaderboard is data-driven: updating <code>data/results.json</code> re-renders the table on the next push.</p>
+        <p class="sub">Submit one evaluation campaign through a GitHub pull request.</p>
       </div>
     </div>
     <ol class="steps">
-      <li><b>Pick a range</b> and boot it locally — every range README has a Quickstart that ends with a verdict.</li>
-      <li><b>Run episodes</b> through any attack channel or framework runner (promptfoo, PyRIT, DeepTeam, Dreadnode, Lakera Red, or a hand-driven MCP client). The observe-only oracle writes <code>.run/oracle/result-&lt;N&gt;.json</code> per episode.</li>
-      <li><b>Aggregate</b> your episode results into one campaign row and open a PR appending it to <code>data/results.json</code>:</li>
+      <li>Run the benchmark with the official victim configuration and collect raw Oracle artifacts.</li>
+      <li>In your fork, add one campaign file under <code>data/submissions/</code> using the <a href="https://github.com/greyzone-bench/greyzone-bench.github.io/blob/main/data/submissions/README.md" target="_blank" rel="noopener">submission format</a>.</li>
+      <li>Open a pull request from your branch. Choose the victim range; its model is fixed by the benchmark and supplied automatically.</li>
     </ol>
-    <pre class="schema">{
-  <span class="k">"attacker"</span>: { <span class="k">"framework"</span>: <span class="s">"pyrit"</span>,  <span class="k">"model"</span>: <span class="s">"glm-4.7"</span> },
-  <span class="k">"victim"</span>:   { <span class="k">"range"</span>: <span class="s">"shopware-claude-commerce"</span>, <span class="k">"model"</span>: <span class="s">"claude-sonnet-4-6"</span> },
-  <span class="k">"episodes"</span>: <span class="n">15</span>,
-  <span class="k">"asr"</span>: <span class="n">0.53</span>,                       <span class="k">"authenticity"</span>: <span class="n">0.71</span>,
-  <span class="k">"controlFalsePositive"</span>: <span class="n">0.0</span>,      <span class="k">"noReplyRate"</span>: <span class="n">0.13</span>,
-  <span class="k">"bySurface"</span>: { <span class="s">"exfil"</span>: { <span class="k">"episodes"</span>: <span class="n">5</span>, <span class="k">"asr"</span>: <span class="n">0.60</span> } },
-  <span class="k">"submittedBy"</span>: <span class="s">"your-lab"</span>, <span class="k">"date"</span>: <span class="s">"2026-12-01"</span>, <span class="k">"artifacts"</span>: <span class="s">"link-to-logs"</span>
-}</pre>
-    <p class="submit-note">Submissions must include raw episode artifacts; we recompute ASR from <code>result-&lt;N&gt;.json</code> files and reject self-reported scores that the artifacts do not support.</p>
+    <div class="submit-actions">
+      <a class="btn btn-primary" href="https://github.com/greyzone-bench/greyzone-bench.github.io/compare" target="_blank" rel="noopener">Open a pull request ↗</a>
+      <a href="https://github.com/greyzone-bench/greyzone-bench.github.io/blob/main/data/submissions/README.md" target="_blank" rel="noopener">Submission guide</a>
+    </div>
+    <p class="submit-note">Include your attacker configuration, evaluation metrics, and links to raw episode artifacts. Maintainers review the evidence before merging results.</p>
   </section>
 
 </main>
@@ -599,7 +595,7 @@ function renderResults() {
   const body = document.getElementById("results-body");
   if (!RESULTS.length) {
     const n = cols.length;
-    body.innerHTML = `<tr class="no-results"><td colspan="${n}">No results yet — the first evaluation campaigns are running.<br><br><a class="cta" href="#submit">Run the benchmark and submit yours ↗</a></td></tr>`;
+    body.innerHTML = `<tr class="no-results"><td colspan="${n}">No results yet — the first evaluation campaigns are running.<br><br><a class="cta" href="https://github.com/greyzone-bench/greyzone-bench.github.io/compare" target="_blank" rel="noopener">Submit results via pull request ↗</a></td></tr>`;
     return;
   }
   const sorted = [...RESULTS].sort((a, b) => {

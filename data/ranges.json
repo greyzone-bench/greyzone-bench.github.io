@@ -3,6 +3,7 @@
   "ranges": [
     {
       "dir": "shopware-claude-commerce",
+      "model": "claude-haiku-4-5-20251001",
       "upstream": "agentic-commerce-lab/shopware-claude-commerce (Anthropic Commerce Agents blueprint, unmodified)",
       "domain": "E-commerce (buyer + merchant agents over a real Shopware 6.7 store)",
       "goals": 5,
@@ -11,6 +12,7 @@
     },
     {
       "dir": "kubectl-ai",
+      "model": "gpt-4.1-mini-2025-04-14",
       "upstream": "GoogleCloudPlatform/kubectl-ai (cluster-admin, kubectl + bash only)",
       "domain": "Kubernetes AI-ops against a disguised 21-node production cluster",
       "goals": 6,
@@ -19,6 +21,7 @@
     },
     {
       "dir": "smart-home",
+      "model": "gpt-4.1-mini-2025-04-14",
       "upstream": "goruck/home-generative-agent on Home Assistant (pinned)",
       "domain": "Smart home: devices, locks, cameras with a real vision model",
       "goals": 6,
@@ -27,6 +30,7 @@
     },
     {
       "dir": "Clawith",
+      "model": "gpt-4.1-mini-2025-04-14",
       "upstream": "Clawith enterprise multi-agent platform",
       "domain": "Enterprise group-chat agents with souls, memory, and shared workspaces",
       "goals": 5,
@@ -35,6 +39,7 @@
     },
     {
       "dir": "Inbox_Zero_Mail_Agent",
+      "model": "gpt-4.1-mini-2025-04-14",
       "upstream": "Inbox Zero (patched Gmail emulator)",
       "domain": "Email agent: auto-reply, rules, cold-mail screening",
       "goals": 3,
@@ -43,6 +48,7 @@
     },
     {
       "dir": "Letta_Issue_Agent",
+      "model": "gpt-4.1-mini-2025-04-14",
       "upstream": "Gitea + Letta Code (persistent-memory coding agent)",
       "domain": "Issue-driven coding agent with branch/PR write access",
       "goals": 3,
@@ -51,6 +57,7 @@
     },
     {
       "dir": "ZerePy",
+      "model": "gpt-4.1-mini-2025-04-14",
       "upstream": "blorm-network/ZerePy (tool-driven loop)",
       "domain": "Social-to-onchain agent with a funded wallet on a simulated chain",
       "goals": 4,
@@ -59,6 +66,7 @@
     },
     {
       "dir": "agent-openai-java-banking-assistant",
+      "model": "gpt-4.1-mini-2025-04-14",
       "upstream": "Microsoft agent-openai-java banking sample",
       "domain": "Banking copilot: supervisor + account/transactions/payments agents",
       "goals": 2,
@@ -67,6 +75,7 @@
     },
     {
       "dir": "alpaca-mcp-server",
+      "model": "claude-haiku-4-5-20251001",
       "upstream": "alpacahq/alpaca-mcp-server (trust-envelope ablation patches)",
       "domain": "Trading agent over a simulated market with news/social feeds",
       "goals": 6,
@@ -75,6 +84,7 @@
     },
     {
       "dir": "commonly",
+      "model": "gpt-4.1-mini-2025-04-14",
       "upstream": "Team-Commonly/commonly",
       "domain": "Social platform where humans and agents share pods and a task board",
       "goals": 6,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate data/ranges.json goal counts against the dataset checkout.
+"""Validate data/ranges.json goal counts and fixed victim models against the dataset checkout.
 
 The dataset repository is the single source of truth. This script walks each
 range's benchmark/scenarios/ directory (both layouts: <range>/benchmark/ and
@@ -8,11 +8,12 @@ data/ranges.json. Run it before publishing site changes; it exits non-zero on
 any mismatch so it can gate CI.
 
 Usage:
-    python3 scripts/validate_ranges.py [--dataset /path/to/AgentThreatDataset]
+    python3 scripts/validate_ranges.py [--dataset /path/to/GreyZone]
 """
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -46,13 +47,27 @@ def count_goals(range_dir: Path) -> int:
     return -1  # scenarios directory not found
 
 
+MODEL_CONFIGS = {
+    "Clawith": (".env.example", "OPENAI_MODEL"),
+    "Inbox_Zero_Mail_Agent": ("apps/web/.env.example", "OPENAI_MODEL"),
+    "Letta_Issue_Agent": (".env.example", "OPENAI_MODEL"),
+    "ZerePy": (".env.example", "OPENAI_MODEL"),
+    "agent-openai-java-banking-assistant": ("app/.env.example", "OPENAI_MODEL"),
+    "commonly": ("docker/stack/.env.example", "OPENAI_MODEL"),
+    "kubectl-ai": (".env.example", "OPENAI_MODEL"),
+    "smart-home": ("sim/secrets.env.example", "OPENAI_MODEL"),
+    "alpaca-mcp-server": ("sim/.env.example", "ANTHROPIC_MODEL"),
+    "shopware-claude-commerce": (".env.example", "ANTHROPIC_MODEL"),
+}
+
+
 def main() -> int:
     here = Path(__file__).resolve().parent
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "--dataset",
         type=Path,
-        default=here.parent.parent / "AgentThreatDataset",  # local dataset checkout (pre-rename name)
+        default=here.parent.parent / "GreyZone",
         help="path to the dataset checkout (default: sibling of this repo)",
     )
     args = ap.parse_args()
@@ -68,6 +83,12 @@ def main() -> int:
             print(f"{r['dir']:40} {r['goals']:>8} {'?':>6}  MISSING RANGE DIR")
             failures += 1
             continue
+        relative, key = MODEL_CONFIGS[r["dir"]]
+        config = range_dir / relative
+        configured = re.search(rf"(?m)^{key}=([^\r\n]+)$", config.read_text()) if config.is_file() else None
+        if not configured or configured[1].strip() != r.get("model"):
+            print(f"{r['dir']:40} MODEL MISMATCH — compare data/ranges.json with {relative}")
+            failures += 1
         found = count_goals(range_dir)
         ok = found == r["goals"]
         if not ok:
