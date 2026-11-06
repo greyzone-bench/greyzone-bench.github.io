@@ -169,6 +169,31 @@
     border: 1px solid var(--border); border-radius: var(--radius-lg);
     box-shadow: var(--card-shadow);
   }
+  .paper-layout {
+    display: grid; grid-template-columns: 200px minmax(0, 1fr);
+    gap: 2.5rem; align-items: start;
+  }
+  .overview h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.01em;
+  }
+  .overview p, .overview li { font-size: 0.9375rem; line-height: 1.65; color: var(--text-secondary); }
+  .overview p { margin: 0 0 0.75rem; }
+  .overview ul { margin: 0; padding-left: 1.25rem; }
+  .overview li { margin-bottom: 0.4rem; }
+  .overview strong, .overview li b { font-weight: 600; color: var(--text); }
+  .overview-figure { margin: 1.75rem 0 0; }
+  .overview-figure img {
+    display: block; width: 100%; height: auto;
+    padding: 1rem 1.25rem;
+    background: #fff;
+    border: 1px solid var(--border); border-radius: var(--radius-xl);
+    box-shadow: var(--card-shadow);
+  }
+  .overview-figure figcaption {
+    margin-top: 0.6rem; text-align: center;
+    font-size: 0.8125rem; color: var(--text-muted);
+  }
 
   /* ---------- tabs (underline style) ---------- */
   .tabs {
@@ -367,6 +392,8 @@
   @media (max-width: 700px) {
     .cols { grid-template-columns: 1fr; }
     .taxonomy-cards { grid-template-columns: 1fr; }
+    .paper-layout { grid-template-columns: 1fr; gap: 1.5rem; }
+    .overview-figure img { padding: 0.5rem; }
     .stats { gap: 1.5rem; }
     .page-header h1 { font-size: 1.5rem; }
     .container { padding: 0 16px; }
@@ -396,7 +423,7 @@
     </div>
     <div class="stats">
       <div class="stat"><b id="stat-ranges">10</b><span>threat ranges</span></div>
-      <div class="stat"><b id="stat-goals">46</b><span>goals</span></div>
+      <div class="stat"><b id="stat-goals">46</b><span>attack scenarios</span></div>
       <div class="stat"><b id="stat-surfaces">39</b><span>oracle surfaces</span></div>
       <div class="stat"><b id="stat-channels">21</b><span>injection channels</span></div>
     </div>
@@ -410,10 +437,26 @@
     <div class="section-head">
       <h2 id="paper-heading">Paper</h2>
     </div>
-    <a class="paper-preview" href="paper.pdf" target="_blank" rel="noopener">
-      <img src="assets/paper-first-page.png" alt="First page of the GreyZone paper" width="1080" height="1600">
-      <span>Read the paper (PDF)</span>
-    </a>
+    <div class="paper-layout">
+      <a class="paper-preview" href="paper.pdf" target="_blank" rel="noopener">
+        <img src="assets/paper-first-page.png" alt="First page of the GreyZone paper" width="1080" height="1600">
+        <span>Read the paper (PDF)</span>
+      </a>
+      <div class="overview">
+        <h3>Overview</h3>
+        <p>LLM agents read external content, call tools and change application state, so a successful attack shows up as a leaked secret or an unauthorized action, not just a bad reply. Automated red-teaming services such as Promptfoo, PyRIT, DeepTeam and Dreadnode are built to find these failures, but when a test finds nothing it is unclear whether the agent resisted or the service never reached a weakness. <strong>GreyZone evaluates the services themselves</strong>: each one acts as an end-to-end attacker and is measured on whether it generates and delivers attacks that cause verified security-policy violations in real agent applications.</p>
+        <ul>
+          <li><b>Real applications.</b> 10 independently developed, open-source agent applications (coding, enterprise collaboration, email, trading, commerce, banking, smart home, Kubernetes operations and social/on-chain agents) run with their own workflows, permissions and security boundaries. External dependencies are replaced with controlled simulations, and every run starts from a prepared initial state.</li>
+          <li><b>46 attack scenarios.</b> Each scenario fixes the application, initial state, security policy, attack objective, attacker constraints and oracle. The objective is the same for every service; how to reach it is up to the service.</li>
+          <li><b>One attacker interface.</b> An MCP interface exposes only the operations the attacker's role permits, for direct injection (messages to the agent) or indirect injection (content the agent reads during its task). Service-specific adapters connect each red-teaming service to it.</li>
+          <li><b>Independent oracles.</b> Each scenario's oracle checks execution evidence and application state, not the service's own verdict or the agent's reply, before reporting a verified outcome.</li>
+        </ul>
+      </div>
+    </div>
+    <figure class="overview-figure">
+      <a href="assets/greyzone-overview.png" target="_blank" rel="noopener"><img src="assets/greyzone-overview.png" alt="GreyZone workflow: a scenario defines the attack objective, attacker constraints, application, initial state, security policy and oracle. Red-teaming services reach the agent application through service adapters and an MCP interface, by direct injection to the subject agents or indirect injection into the environment, and an independent oracle turns execution evidence into a verified outcome." width="2159" height="944" loading="lazy"></a>
+      <figcaption>Fig. 1 from the paper: scenario structure and execution workflow.</figcaption>
+    </figure>
   </section>
 
   <div id="banner" class="banner" hidden>
@@ -454,7 +497,7 @@
     <div class="section-head">
       <div>
         <h2>Attack taxonomy</h2>
-        <p class="sub">Every goal maps to exactly one category; every category is witnessed by ≥2 ranges.</p>
+        <p class="sub">Every scenario maps to exactly one category; every category is witnessed by ≥2 ranges.</p>
       </div>
     </div>
     <div class="taxonomy-cards" id="taxonomy-cards"></div>
@@ -471,7 +514,7 @@
     <div class="table-card">
       <table id="ranges-table">
         <thead><tr>
-          <th>Range</th><th>Upstream victim</th><th class="num">Goals</th><th>Oracle surfaces</th><th class="hide-sm">Attack surface</th>
+          <th>Range</th><th>Upstream victim</th><th class="num">Scenarios</th><th>Oracle surfaces</th><th class="hide-sm">Attack surface</th>
         </tr></thead>
         <tbody id="ranges-body"></tbody>
       </table>
@@ -512,9 +555,10 @@
       <details>
         <summary>BibTeX</summary>
         <pre id="bibtex">@dataset{greyzone2026,
-  title  = {GreyZone: Red-Teaming LLM Agents in Real Applications},
+  title  = {GreyZone: Production-quality Agentic Application Threats},
+  author = {Zhou, Ruoyu and Jiang, Shuyao and Ruan, Haifeng and Roychoudhury, Abhik},
   year   = {2026},
-  note   = {10 threat ranges, 46 goals, mechanical oracles},
+  note   = {10 threat ranges, 46 attack scenarios, mechanical oracles},
   howpublished = {https://greyzone-bench.github.io/}
 }</pre>
       </details>
