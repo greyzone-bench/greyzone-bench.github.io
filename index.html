@@ -173,6 +173,22 @@
     display: grid; grid-template-columns: 200px minmax(0, 1fr);
     gap: 2.5rem; align-items: start;
   }
+  .paper-media { display: flex; flex-direction: column; gap: 1.75rem; }
+  .video-thumb { position: relative; display: block; }
+  .video-thumb .play {
+    position: absolute; left: 50%; top: 50%;
+    width: 44px; height: 44px; transform: translate(-50%, -50%);
+  }
+  .video-thumb .play circle { fill: rgba(17, 24, 39, 0.72); transition: fill 0.1s ease; }
+  .video-thumb .play path { fill: #fff; }
+  .paper-preview:hover .play circle { fill: var(--accent); }
+  .video-duration {
+    position: absolute; right: 6px; bottom: 6px;
+    padding: 0 0.35rem; border-radius: 4px;
+    background: rgba(17, 24, 39, 0.75); color: #fff;
+    font-size: 0.6875rem; font-weight: 600; line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
   .overview h3 {
     margin: 0 0 0.5rem;
     font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.01em;
@@ -438,10 +454,20 @@
       <h2 id="paper-heading">Paper</h2>
     </div>
     <div class="paper-layout">
-      <a class="paper-preview" href="paper.pdf" target="_blank" rel="noopener">
-        <img src="assets/paper-first-page.png" alt="First page of the GreyZone paper" width="1080" height="1600">
-        <span>Read the paper (PDF)</span>
-      </a>
+      <div class="paper-media">
+        <a class="paper-preview" href="paper.pdf" target="_blank" rel="noopener">
+          <img src="assets/paper-first-page.png" alt="First page of the GreyZone paper" width="1080" height="1600">
+          <span>Read the paper (PDF)</span>
+        </a>
+        <a class="paper-preview" href="assets/greyzone-voiceover.mp4" target="_blank" rel="noopener">
+          <span class="video-thumb">
+            <img src="assets/greyzone-video-thumb.jpg" alt="Title slide of the GreyZone video" width="640" height="360">
+            <svg class="play" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="24"/><path d="M19 15.5 33 24l-14 8.5z"/></svg>
+            <span class="video-duration">2:25</span>
+          </span>
+          <span>Watch the video</span>
+        </a>
+      </div>
       <div class="overview">
         <h3>Overview</h3>
         <p>LLM agents read external content, call tools and change application state, so a successful attack shows up as a leaked secret or an unauthorized action, not just a bad reply. Automated red-teaming services such as Promptfoo, PyRIT, DeepTeam and Dreadnode are built to find these failures, but when a test finds nothing it is unclear whether the agent resisted or the service never reached a weakness. <strong>GreyZone evaluates the services themselves</strong>: each one acts as an end-to-end attacker and is measured on whether it generates and delivers attacks that cause verified security-policy violations in real agent applications.</p>
