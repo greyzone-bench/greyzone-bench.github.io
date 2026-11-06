@@ -52,7 +52,8 @@ python3 scripts/validate_ranges.py --dataset /path/to/AgentThreatDataset
 ```
 
 The script walks every range's `benchmark/scenarios/` directory (both the
-standard and `sim/benchmark/` layouts), counts goals, and fails loudly on
+standard and `sim/benchmark/` layouts), counts attack goals (kubectl-ai's
+`control` calibration scenario is excluded), and fails loudly on
 mismatch — safe to wire into CI as a gate.
 
 ## Adding results

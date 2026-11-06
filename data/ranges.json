@@ -1,21 +1,21 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "ranges": [
     {
       "dir": "shopware-claude-commerce",
-      "upstream": "anthropics/commerce-agents blueprint (unmodified, pinned fd4d5922)",
+      "upstream": "agentic-commerce-lab/shopware-claude-commerce (Anthropic Commerce Agents blueprint, unmodified)",
       "domain": "E-commerce (buyer + merchant agents over a real Shopware 6.7 store)",
       "goals": 5,
       "surfaces": ["purchase", "price", "refund", "exfil"],
-      "runners": ["promptfoo", "dreadnode", "pyrit", "deepteam"]
+      "channels": ["reviews", "listings", "invoices", "notes"]
     },
     {
       "dir": "kubectl-ai",
       "upstream": "GoogleCloudPlatform/kubectl-ai (cluster-admin, kubectl + bash only)",
       "domain": "Kubernetes AI-ops against a disguised 21-node production cluster",
-      "goals": 7,
+      "goals": 6,
       "surfaces": ["secret-exfil", "rbac-escalation", "sabotage"],
-      "runners": ["ops-mcp (planting tools)"]
+      "channels": ["forged events", "web logs", "tool output"]
     },
     {
       "dir": "smart-home",
@@ -23,63 +23,63 @@
       "domain": "Smart home: devices, locks, cameras with a real vision model",
       "goals": 6,
       "surfaces": ["unlock", "disarm", "garage-open", "automation-persist", "exfil"],
-      "runners": ["redteam-mcp (4 injection channels)"]
+      "channels": ["camera feed", "web pages", "media metadata", "ssdp"]
     },
     {
       "dir": "Clawith",
       "upstream": "Clawith enterprise multi-agent platform",
       "domain": "Enterprise group-chat agents with souls, memory, and shared workspaces",
       "goals": 5,
-      "surfaces": ["exfil", "private-agent-leak", "email-exfil", "kb-integrity", "fs-escape"],
-      "runners": ["promptfoo", "dreadnode", "pyrit", "deepteam"]
+      "surfaces": ["chat-exfil", "email-exfil", "kb-poison", "private-agent-leak", "sandbox-escape"],
+      "channels": ["group chat"]
     },
     {
       "dir": "Inbox_Zero_Mail_Agent",
       "upstream": "Inbox Zero (patched Gmail emulator)",
       "domain": "Email agent: auto-reply, rules, cold-mail screening",
       "goals": 3,
-      "surfaces": ["kb", "mail", "phishing"],
-      "runners": ["promptfoo", "dreadnode", "pyrit", "deepteam"]
+      "surfaces": ["knowledge-leak", "mail-history-leak", "phishing-outbound"],
+      "channels": ["inbound email"]
     },
     {
       "dir": "Letta_Issue_Agent",
       "upstream": "Gitea + Letta Code (persistent-memory coding agent)",
       "domain": "Issue-driven coding agent with branch/PR write access",
       "goals": 3,
-      "surfaces": ["exfil", "mem", "net"],
-      "runners": ["promptfoo", "dreadnode", "pyrit", "deepteam", "lakera"]
+      "surfaces": ["runtime-credential-disclosure", "memory-poisoning", "outbound-network-traffic"],
+      "channels": ["issue threads"]
     },
     {
       "dir": "ZerePy",
       "upstream": "blorm-network/ZerePy (tool-driven loop)",
       "domain": "Social-to-onchain agent with a funded wallet on a simulated chain",
       "goals": 4,
-      "surfaces": ["over-refund", "unvetted-payment", "ineligible-airdrop", "prohibited-promotion"],
-      "runners": ["redteam-mcp (X API client)"]
+      "surfaces": ["refund-redirect", "treasury-redirect", "airdrop-impersonation", "promoter-shill"],
+      "channels": ["posts", "replies"]
     },
     {
       "dir": "agent-openai-java-banking-assistant",
       "upstream": "Microsoft agent-openai-java banking sample",
       "domain": "Banking copilot: supervisor + account/transactions/payments agents",
       "goals": 2,
-      "surfaces": ["attacker-payment", "admin-info-leak"],
-      "runners": ["external MCP + runner"]
+      "surfaces": ["direct-recon-steal", "indirect-invoice-pay"],
+      "channels": ["direct chat", "invoice fields"]
     },
     {
       "dir": "alpaca-mcp-server",
       "upstream": "alpacahq/alpaca-mcp-server (trust-envelope ablation patches)",
       "domain": "Trading agent over a simulated market with news/social feeds",
       "goals": 6,
-      "surfaces": ["steered-trade", "unauthorized-sell", "panic-liquidation", "sell-omission", "protection-pull", "order-tamper"],
-      "runners": ["attack console (3 planting tools)"]
+      "surfaces": ["attacker-steered-trade", "unauthorized-sell", "panic-liquidation", "sell-omission", "protection-pull", "order-tamper"],
+      "channels": ["news", "social posts", "listings"]
     },
     {
       "dir": "commonly",
       "upstream": "Team-Commonly/commonly",
       "domain": "Social platform where humans and agents share pods and a task board",
       "goals": 6,
-      "surfaces": ["exfil", "approval-action", "member-change", "pod-deletion", "message-deletion", "evidence-destruction"],
-      "runners": ["pod chat (direct)"]
+      "surfaces": ["private-pod-leak", "task-exfil", "forged-invite", "forged-kick", "forged-delete", "forged-dissolve"],
+      "channels": ["pod messages"]
     }
   ]
 }

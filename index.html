@@ -153,12 +153,11 @@
   <div class="wrap">
     <span class="wordmark"><span class="dot"></span>GreyZone</span>
     <h1>Red-Team Leaderboard</h1>
-    <p class="tagline">10 threat ranges · 47 goals · real upstream victim applications · mechanical oracles — <em>no model judges a model</em></p>
+    <p class="tagline">10 threat ranges · 46 goals · real upstream victim applications · mechanical oracles — <em>no model judges a model</em></p>
     <div class="stats">
       <span><b>10</b> ranges</span>
-      <span><b>47</b> goals</span>
+      <span><b>46</b> goals</span>
       <span><b>41</b> oracle judgment surfaces</span>
-      <span><b>5</b> attack frameworks</span>
       <span><b>0</b> LLM judges</span>
     </div>
   </div>
@@ -218,7 +217,7 @@
     </div>
     <table id="ranges-table">
       <thead><tr>
-        <th>Range</th><th>Upstream victim</th><th class="num">Goals</th><th>Oracle surfaces</th><th class="hide-sm">Attack channels</th>
+        <th>Range</th><th>Upstream victim</th><th class="num">Goals</th><th>Oracle surfaces</th><th class="hide-sm">Attack surface</th>
       </tr></thead>
       <tbody id="ranges-body"></tbody>
     </table>
@@ -264,7 +263,7 @@
         <pre id="bibtex">@dataset{greyzone2026,
   title  = {GreyZone: Red-Teaming LLM Agents in Real Applications},
   year   = {2026},
-  note   = {10 threat ranges, 47 goals, mechanical oracles},
+  note   = {10 threat ranges, 46 goals, mechanical oracles},
   howpublished = {https://greyzone-bench.github.io/}
 }</pre>
       </details>
@@ -373,12 +372,10 @@ document.getElementById("view-tabs").addEventListener("click", ev => {
 /* ---------- taxonomy ---------- */
 const TAXONOMY = [
   "Exfiltration — secrets, credentials, private state leaving the boundary",
-  "Financial fraud — unauthorized payments, refunds, price-floor breaches",
-  "Authorization abuse — forged authority, member/privilege manipulation",
-  "Integrity & poisoning — knowledge bases, agent memory, data tampering",
-  "Persistence — dangerous automations surviving the episode",
-  "Sabotage — destructive actions on production state",
-  "Propagation & impersonation — phishing outbound, fake identities",
+  "Financial fraud — unauthorized payments, refunds, trades, price manipulation",
+  "Authorization abuse — forged authority, privilege escalation, sandbox escape",
+  "Integrity & sabotage — KB/memory poisoning, persistent automations, deployment disruption",
+  "Propagation & impersonation — phishing outbound, fake identities, token promotion",
 ];
 function renderTaxonomy() {
   document.getElementById("taxonomy-chips").innerHTML = TAXONOMY.map(t => {
@@ -398,7 +395,7 @@ function renderRanges(data) {
       <td>${esc(r.upstream)}<br><span class="model">${esc(r.domain)}</span></td>
       <td class="num"><span class="scen-count">${r.goals}</span></td>
       <td><span class="surfaces">${r.surfaces.map(s => `<span class="surface">${esc(s)}</span>`).join("")}</span></td>
-      <td class="hide-sm">${r.runners.map(esc).join(", ")}</td>
+      <td class="hide-sm">${r.channels.map(esc).join(", ")}</td>
     </tr>`
   ).join("");
 }

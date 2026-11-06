@@ -20,11 +20,14 @@ GOAL_DIR_CANDIDATES = ("benchmark/scenarios", "sim/benchmark/scenarios")
 
 
 def count_goals(range_dir: Path) -> int:
-    """Count goals for one range.
+    """Count attack goals for one range.
 
     Two layouts exist in the dataset:
       - <range>/benchmark/scenarios/<id>/scenario.json  (dir-per-scenario)
       - <range>/benchmark/scenarios/<id>.json           (flat, kubectl-ai)
+
+    Calibration entries named `control` (kubectl-ai's false-positive check) are
+    not attack goals and are excluded, matching the paper's 46-scenario count.
     """
     for rel in GOAL_DIR_CANDIDATES:
         scen = range_dir / rel
@@ -32,6 +35,8 @@ def count_goals(range_dir: Path) -> int:
             continue
         n = 0
         for entry in sorted(scen.iterdir()):
+            if entry.stem == "control":
+                continue
             if entry.is_dir():
                 if (entry / "scenario.json").is_file():
                     n += 1
