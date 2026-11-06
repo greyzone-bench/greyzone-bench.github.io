@@ -6,164 +6,374 @@
 <title>GreyZone — Red-Team Leaderboard</title>
 <meta name="description" content="A benchmark of 10 threat ranges for red-teaming LLM agents in real applications. Mechanical oracles — no model judges a model.">
 <style>
+  /* Design language follows the SWE-bench leaderboard family: off-white page,
+     blue accent, card tables with sticky uppercase headers, tabular numerals. */
   :root {
-    --ink: #16181d;
-    --muted: #5b6472;
-    --faint: #8a93a3;
-    --line: #e3e7ee;
-    --bg: #ffffff;
-    --bg-soft: #f6f8fb;
-    --accent: #b3352c;
-    --accent-soft: #fdf3f2;
-    --amber-bg: #fff8e8;
-    --amber-line: #f0d9a6;
-    --amber-ink: #7a5b16;
-    --bar: #d94f44;
-    --bar-track: #f0e3e2;
-    --green: #1e7a44;
-    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    --bg: #f8f8f8;
+    --bg-alt: #f9fafb;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --blue-50: #eff6ff;
+    --blue-100: #dbeafe;
+    --blue-400: #60a5fa;
+    --blue-600: #2563eb;
+    --blue-700: #1d4ed8;
+    --green-50: #ecfdf5;
+    --green-600: #059669;
+    --header-blue: #1697E2;
+    --header-cream: #FFF7EC;
+    --text: var(--gray-900);
+    --text-secondary: var(--gray-600);
+    --text-muted: var(--gray-500);
+    --border: var(--gray-200);
+    --accent: var(--blue-600);
+    --accent-light: var(--blue-50);
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 12px;
+    --radius-full: 9999px;
+    --card-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 12px 28px -18px rgba(16, 24, 40, 0.25);
+    --card-shadow-hover: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 20px -14px rgba(16, 24, 40, 0.28);
+    --mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body {
     margin: 0;
     background: var(--bg);
-    color: var(--ink);
-    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--text);
+    font: 16px/1.5 "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--blue-700); }
 
-  /* ---------- header ---------- */
-  header { border-bottom: 1px solid var(--line); background: var(--bg-soft); }
-  .wordmark {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-weight: 700; letter-spacing: .2px; font-size: 14px; color: var(--ink);
-    padding-top: 22px;
+  /* ---------- page header (blue band) ---------- */
+  .page-header {
+    background-color: var(--header-blue);
+    color: var(--header-cream);
+    padding: 0.9rem 0 2rem;
   }
-  .wordmark .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); display: inline-block; }
-  header h1 { margin: 6px 0 4px; font-size: 30px; line-height: 1.25; letter-spacing: -.4px; }
-  .tagline { margin: 0 0 6px; color: var(--muted); font-size: 15px; }
-  .stats { display: flex; flex-wrap: wrap; gap: 18px; padding: 8px 0 20px; color: var(--faint); font-size: 13px; }
-  .stats b { color: var(--ink); font-weight: 650; }
+  .topnav {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+  .brand {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-size: 1.125rem; font-weight: 600; color: var(--header-cream);
+    letter-spacing: -0.01em;
+  }
+  .brand:hover { color: #fff; }
+  .brand-dot {
+    width: 10px; height: 10px; border-radius: var(--radius-full);
+    background: var(--header-cream);
+  }
+  .navlinks { display: flex; align-items: center; flex-wrap: wrap; gap: 1.25rem; }
+  .navlinks a {
+    color: rgba(255, 247, 236, 0.85);
+    font-size: 0.875rem; font-weight: 500;
+    transition: color 0.1s ease;
+  }
+  .navlinks a:hover { color: #fff; }
+  .page-header h1 {
+    margin: 0;
+    font-size: 1.875rem; font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--header-cream);
+  }
+  .page-header .header-sub {
+    margin: 0.5rem 0 0;
+    max-width: 46rem;
+    font-size: 0.9375rem; line-height: 1.55;
+    color: rgba(255, 247, 236, 0.8);
+  }
+  .header-sub em { font-style: normal; font-weight: 600; color: var(--header-cream); }
+  .stats { display: flex; flex-wrap: wrap; gap: 2.25rem; margin-top: 1.5rem; }
+  .stat b {
+    display: block;
+    font-size: 1.5rem; font-weight: 600; line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+    color: var(--header-cream);
+  }
+  .stat span {
+    display: block; margin-top: 0.2rem;
+    font-size: 0.6875rem; font-weight: 600;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    color: rgba(255, 247, 236, 0.7);
+  }
 
   /* ---------- announcement banner ---------- */
   .banner {
-    margin: 22px 0 6px; padding: 14px 18px;
-    background: var(--amber-bg); border: 1px solid var(--amber-line);
-    border-radius: 10px; color: var(--amber-ink); font-size: 14.5px;
-    display: flex; gap: 10px; align-items: baseline;
+    display: flex; align-items: baseline; gap: 0.6rem;
+    margin: 1.5rem 0 0;
+    padding: 0.75rem 1rem;
+    background: var(--blue-50);
+    border: 1px solid var(--blue-100);
+    border-radius: var(--radius-lg);
+    font-size: 0.875rem; color: var(--blue-700);
   }
-  .banner .glyph { font-size: 16px; }
-  .banner b { font-weight: 650; }
+  .banner[hidden] { display: none; }
+  .banner .glyph { color: var(--accent); }
 
   /* ---------- sections ---------- */
-  section { margin: 34px 0; }
-  .section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-  h2 { font-size: 19px; margin: 0; letter-spacing: -.2px; }
-  h2 .count { color: var(--faint); font-weight: 400; font-size: 14px; margin-left: 6px; }
-  .sub { color: var(--muted); font-size: 13.5px; margin: 4px 0 0; }
+  section { margin-top: 3rem; }
+  .section-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    flex-wrap: wrap; gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .section-head h2 {
+    margin: 0;
+    font-size: 1.25rem; font-weight: 600; letter-spacing: -0.01em;
+  }
+  .section-head .count {
+    margin-left: 0.5rem;
+    font-size: 0.875rem; font-weight: 500; color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .section-head .sub {
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem; color: var(--text-muted);
+  }
 
-  /* ---------- tabs ---------- */
-  .tabs { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; font-size: 13px; }
+  /* ---------- tabs (underline style) ---------- */
+  .tabs {
+    display: flex; gap: 1.5px;
+    border-bottom: 1.5px solid var(--border);
+  }
   .tabs button {
-    border: 0; background: #fff; color: var(--muted); padding: 6px 14px; cursor: pointer; font: inherit; font-size: 13px;
+    padding: 0.6rem 0.9rem;
+    background: none; border: none; cursor: pointer;
+    font: inherit; font-size: 0.875rem; font-weight: 500;
+    color: var(--text-secondary);
+    position: relative;
+    transition: color 0.1s ease;
   }
-  .tabs button + button { border-left: 1px solid var(--line); }
-  .tabs button.active { background: var(--ink); color: #fff; font-weight: 550; }
+  .tabs button:hover { color: var(--accent); }
+  .tabs button.active { color: var(--accent); }
+  .tabs button.active::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -1.5px;
+    height: 2px; background: var(--accent);
+  }
 
-  /* ---------- tables ---------- */
-  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  /* ---------- table cards ---------- */
+  .table-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    background: var(--bg);
+    box-shadow: var(--card-shadow);
+    overflow: auto;
+  }
+  table { width: 100%; border-collapse: collapse; }
   thead th {
-    position: sticky; top: 0; background: var(--bg);
-    border-bottom: 2px solid var(--ink);
-    text-align: left; padding: 9px 10px; font-size: 12px; letter-spacing: .4px;
-    text-transform: uppercase; color: var(--muted); font-weight: 600;
-    cursor: pointer; user-select: none; white-space: nowrap;
+    position: sticky; top: 0; z-index: 10;
+    padding: 0.75rem 1rem;
+    background: var(--bg-alt);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.6875rem; font-weight: 600;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: left;
+    white-space: nowrap;
   }
-  thead th.no-sort { cursor: default; }
-  thead th .arrow { color: var(--accent); margin-left: 3px; }
-  tbody td { border-bottom: 1px solid var(--line); padding: 9px 10px; vertical-align: middle; }
-  tbody tr:hover { background: var(--bg-soft); }
-  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-  .framework { font-weight: 600; }
-  .model { color: var(--muted); font-size: 12.5px; }
-  .bar { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
-  .bar .track { width: 72px; height: 7px; border-radius: 4px; background: var(--bar-track); overflow: hidden; flex: none; }
-  .bar .fill { height: 100%; background: var(--bar); border-radius: 4px; }
-  .bar .val { min-width: 38px; text-align: right; font-variant-numeric: tabular-nums; }
-  .ok { color: var(--green); }
-  .empty-row td {
-    text-align: center; padding: 42px 20px; color: var(--muted); font-size: 14px; background: var(--bg-soft);
+  thead th.num { text-align: right; }
+  thead th.sortable { cursor: pointer; transition: color 0.1s ease, background 0.1s ease; }
+  thead th.sortable:hover { color: var(--text-secondary); background: var(--gray-50); }
+  thead th .arrow { color: var(--accent); margin-left: 2px; }
+  tbody td {
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
   }
-  .empty-row td .cta { color: var(--accent); font-weight: 600; text-decoration: none; }
-  .empty-row td .cta:hover { text-decoration: underline; }
-  .legend { color: var(--faint); font-size: 12.5px; margin: 10px 0 0; }
-  .legend code, .sub code, .steps code {
-    font-family: var(--mono); font-size: 11.5px; background: var(--bg-soft);
-    border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px;
-  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr { transition: background 0.1s ease; }
+  tbody tr:hover { background: var(--accent-light); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  #results-table { min-width: 54rem; }
+  #ranges-table { min-width: 52rem; }
 
-  /* ---------- taxonomy ---------- */
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip {
-    border: 1px solid var(--line); background: var(--bg-soft); color: var(--ink);
-    border-radius: 999px; padding: 5px 13px; font-size: 13px;
+  /* results cells */
+  .rank { color: var(--text-muted); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+  .framework { font-weight: 500; font-size: 0.9375rem; color: var(--text); }
+  .model { font-size: 0.8125rem; color: var(--text-muted); }
+  .meter { display: inline-block; width: 100px; text-align: right; vertical-align: middle; }
+  .meter-val {
+    display: block;
+    font-size: 0.9375rem; font-weight: 600; line-height: 1.25;
+    font-variant-numeric: tabular-nums; font-feature-settings: 'tnum';
+    color: var(--text);
   }
-  .chip b { font-weight: 600; }
+  .meter-track {
+    display: block; height: 4px; margin-top: 5px;
+    border-radius: var(--radius-full);
+    background: var(--gray-200); overflow: hidden;
+  }
+  .meter-fill {
+    display: block; height: 100%;
+    margin-left: auto;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--blue-400), var(--blue-600));
+  }
+  .ok { color: var(--green-600); font-weight: 500; }
+  .muted { color: var(--text-muted); }
+  tr.no-results td {
+    padding: 2rem 1rem; color: var(--text-muted); text-align: center;
+  }
+  tr.no-results:hover { background: transparent; }
+  .cta { font-weight: 500; }
 
-  /* ---------- range catalog ---------- */
-  .surfaces { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+  /* ranges cells */
+  .range-dir { font-weight: 500; font-size: 0.9375rem; white-space: nowrap; }
+  .range-dir, code { font-variant-numeric: tabular-nums; }
+  .victim-sub { display: block; margin-top: 0.15rem; font-size: 0.8125rem; color: var(--text-muted); }
+  .scen-count { font-size: 0.9375rem; font-weight: 600; }
+  .surfaces { display: flex; flex-wrap: wrap; gap: 0.3rem; }
   .surface {
-    font-family: var(--mono); font-size: 11px; color: var(--muted);
-    background: var(--bg-soft); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px;
+    display: inline-block; padding: 0.15rem 0.5rem;
+    border: 1px solid var(--border); border-radius: var(--radius-full);
+    background: var(--gray-50);
+    font-family: var(--mono);
+    font-size: 0.6875rem; color: var(--text-secondary);
+    white-space: nowrap;
   }
-  .scen-count { font-weight: 650; font-variant-numeric: tabular-nums; }
-  .range-dir { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  .channels { font-size: 0.8125rem; color: var(--text-secondary); }
+
+  /* legend under results */
+  .legend {
+    margin: 0.75rem 0 0;
+    font-size: 0.8125rem; line-height: 1.7; color: var(--text-muted);
+  }
+  .legend b { color: var(--text-secondary); font-weight: 600; }
+  .legend code {
+    font-family: var(--mono); font-size: 0.75rem;
+    background: var(--gray-100); padding: 0.05rem 0.3rem; border-radius: 4px;
+  }
+
+  /* ---------- taxonomy cards ---------- */
+  .taxonomy-cards {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+  .tcard {
+    padding: 0.75rem 0.875rem;
+    border: 1px solid var(--border); border-radius: var(--radius-lg);
+    background: var(--bg);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .tcard:hover { border-color: var(--accent); box-shadow: var(--card-shadow-hover); }
+  .tcard:nth-child(5) { grid-column: 1 / -1; }
+  .tcard b { display: block; font-size: 0.9375rem; font-weight: 600; }
+  .tcard span {
+    display: block; margin-top: 0.2rem;
+    font-size: 0.8125rem; line-height: 1.5; color: var(--text-secondary);
+  }
 
   /* ---------- submit ---------- */
-  .steps { margin: 0; padding-left: 22px; color: var(--muted); font-size: 14px; }
-  .steps li { margin: 8px 0; }
-  .steps li b { color: var(--ink); font-weight: 600; }
-  pre {
-    background: #0f1319; color: #d8dee9; border-radius: 10px; padding: 16px 18px;
-    overflow-x: auto; font-family: var(--mono); font-size: 12.5px; line-height: 1.55;
+  .steps { margin: 0 0 1rem; padding-left: 1.25rem; }
+  .steps li { margin-bottom: 0.5rem; font-size: 0.9375rem; line-height: 1.6; }
+  .steps code, .submit-note code, p.sub code {
+    font-family: var(--mono); font-size: 0.8125rem;
+    background: var(--gray-100); padding: 0.05rem 0.3rem; border-radius: 4px;
   }
-  pre .k { color: #8ab4f8; } pre .s { color: #a8d08d; } pre .n { color: #e8a860; }
+  pre.schema {
+    margin: 0 0 0.75rem;
+    padding: 1rem 1.25rem;
+    background: var(--gray-50);
+    border: 1px solid var(--border); border-radius: var(--radius-lg);
+    font-family: var(--mono); font-size: 0.8125rem; line-height: 1.6;
+    overflow-x: auto;
+    color: var(--text-secondary);
+  }
+  pre.schema .k { color: var(--blue-700); }
+  pre.schema .s { color: var(--green-600); }
+  pre.schema .n { color: var(--text); }
+  .submit-note { margin: 0; font-size: 0.875rem; color: var(--text-muted); }
 
   /* ---------- footer ---------- */
-  footer { border-top: 1px solid var(--line); margin-top: 46px; padding: 22px 0 40px; color: var(--faint); font-size: 13px; }
-  footer .cols { display: flex; flex-wrap: wrap; gap: 40px; justify-content: space-between; }
-  footer a { color: var(--muted); }
-  details { margin-top: 14px; }
-  summary { cursor: pointer; color: var(--muted); }
-  footer pre { background: var(--bg-soft); color: var(--ink); border: 1px solid var(--line); font-size: 12px; }
+  footer {
+    margin-top: 4rem;
+    border-top: 1px solid var(--border);
+    background: var(--bg-alt);
+    padding: 2rem 0 2.5rem;
+    font-size: 0.875rem; color: var(--text-secondary);
+  }
+  .cols { display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem; }
+  footer .col b { display: block; margin-bottom: 0.4rem; color: var(--text); }
+  footer pre {
+    margin: 0.4rem 0 0;
+    font-family: var(--mono); font-size: 0.75rem; line-height: 1.6;
+    color: var(--text-muted);
+    overflow-x: auto;
+  }
+  footer a { color: var(--text-secondary); font-weight: 500; }
+  footer a:hover { color: var(--accent); }
+  summary {
+    cursor: pointer; font-weight: 500; color: var(--text);
+    list-style: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "▸ "; color: var(--text-muted); font-size: 0.85em; }
+  details[open] summary::before { content: "▾ "; }
 
-  .error { padding: 14px 18px; border: 1px solid var(--amber-line); background: var(--amber-bg); border-radius: 10px; color: var(--amber-ink); }
+  .error {
+    margin: 1rem 0 0; padding: 0.75rem 1rem;
+    background: #fef2f2; border: 1px solid #fee2e2; border-radius: var(--radius-lg);
+    color: #b91c1c; font-size: 0.875rem;
+  }
+  .error code { background: none; padding: 0; }
 
-  @media (max-width: 760px) {
+  /* ---------- responsive ---------- */
+  @media (max-width: 900px) {
     .hide-sm { display: none; }
-    header h1 { font-size: 24px; }
+    #results-table { min-width: 40rem; }
+    #ranges-table { min-width: 44rem; }
+  }
+  @media (max-width: 700px) {
+    .cols { grid-template-columns: 1fr; }
+    .taxonomy-cards { grid-template-columns: 1fr; }
+    .stats { gap: 1.5rem; }
+    .page-header h1 { font-size: 1.5rem; }
+    .container { padding: 0 16px; }
   }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="wrap">
-    <span class="wordmark"><span class="dot"></span>GreyZone</span>
+<header class="page-header">
+  <div class="container">
+    <nav class="topnav">
+      <a class="brand" href="#"><span class="brand-dot"></span>GreyZone</a>
+      <div class="navlinks">
+        <a href="#results">Leaderboard</a>
+        <a href="#taxonomy">Taxonomy</a>
+        <a href="#ranges">Ranges</a>
+        <a href="#submit">Submit</a>
+        <a href="https://github.com/greyzone-bench" target="_blank" rel="noopener">GitHub&nbsp;↗</a>
+      </div>
+    </nav>
     <h1>Red-Team Leaderboard</h1>
-    <p class="tagline">10 threat ranges · 46 goals · real upstream victim applications · mechanical oracles — <em>no model judges a model</em></p>
+    <p class="header-sub">Automated red-teaming services, evaluated end-to-end against real upstream agent applications — every outcome verified by a mechanical oracle. <em>No model judges a model.</em></p>
     <div class="stats">
-      <span><b>10</b> ranges</span>
-      <span><b>46</b> goals</span>
-      <span><b>41</b> oracle judgment surfaces</span>
-      <span><b>0</b> LLM judges</span>
+      <div class="stat"><b>10</b><span>threat ranges</span></div>
+      <div class="stat"><b>46</b><span>goals</span></div>
+      <div class="stat"><b>41</b><span>oracle surfaces</span></div>
+      <div class="stat"><b>0</b><span>LLM judges</span></div>
     </div>
   </div>
 </header>
 
-<main class="wrap">
+<main class="container">
 
   <div id="banner" class="banner" hidden>
     <span class="glyph">◆</span>
@@ -183,16 +393,18 @@
       </div>
     </div>
 
-    <table id="results-table">
-      <thead><tr id="results-head"></tr></thead>
-      <tbody id="results-body"></tbody>
-    </table>
+    <div class="table-card">
+      <table id="results-table">
+        <thead><tr id="results-head"></tr></thead>
+        <tbody id="results-body"></tbody>
+      </table>
+    </div>
 
     <p class="legend">
       <b>ASR</b> — episodes with verdict <code>success(&lt;surfaces&gt;)</code> ÷ total episodes.
       <b>Authenticity</b> — mean oracle truth-match score over fired exfiltration surfaces (1.0 exact secret, 0.5 long prefix).
       <b>Control&nbsp;FP</b> — false alarms on control/calibration episodes (healthy pipelines report 0).
-      <b>No-reply</b> — episodes closed without any attacker-visible response.
+      <b>No-reply</b> — episodes closed without an attacker-visible response.
     </p>
   </section>
 
@@ -204,7 +416,7 @@
         <p class="sub">Every goal maps to exactly one category; every category is witnessed by ≥2 ranges.</p>
       </div>
     </div>
-    <div class="chips" id="taxonomy-chips"></div>
+    <div class="taxonomy-cards" id="taxonomy-cards"></div>
   </section>
 
   <!-- ================= RANGE CATALOG ================= -->
@@ -215,12 +427,14 @@
         <p class="sub">Victim applications are pinned upstream forks running against fully simulated worlds; each range ships its own oracle.</p>
       </div>
     </div>
-    <table id="ranges-table">
-      <thead><tr>
-        <th>Range</th><th>Upstream victim</th><th class="num">Goals</th><th>Oracle surfaces</th><th class="hide-sm">Attack surface</th>
-      </tr></thead>
-      <tbody id="ranges-body"></tbody>
-    </table>
+    <div class="table-card">
+      <table id="ranges-table">
+        <thead><tr>
+          <th>Range</th><th>Upstream victim</th><th class="num">Goals</th><th>Oracle surfaces</th><th class="hide-sm">Attack surface</th>
+        </tr></thead>
+        <tbody id="ranges-body"></tbody>
+      </table>
+    </div>
   </section>
 
   <!-- ================= SUBMIT ================= -->
@@ -228,15 +442,15 @@
     <div class="section-head">
       <div>
         <h2>Submit results</h2>
-        <p class="sub">The leaderboard is data-driven: updating <code>leaderboard/data/results.json</code> re-renders the table on the next site build.</p>
+        <p class="sub">The leaderboard is data-driven: updating <code>data/results.json</code> re-renders the table on the next push.</p>
       </div>
     </div>
     <ol class="steps">
       <li><b>Pick a range</b> and boot it locally — every range README has a Quickstart that ends with a verdict.</li>
       <li><b>Run episodes</b> through any attack channel or framework runner (promptfoo, PyRIT, DeepTeam, Dreadnode, Lakera Red, or a hand-driven MCP client). The observe-only oracle writes <code>.run/oracle/result-&lt;N&gt;.json</code> per episode.</li>
-      <li><b>Aggregate</b> your episode results into one campaign row and open a PR appending it to <code>leaderboard/data/results.json</code>:</li>
+      <li><b>Aggregate</b> your episode results into one campaign row and open a PR appending it to <code>data/results.json</code>:</li>
     </ol>
-    <pre>{
+    <pre class="schema">{
   <span class="k">"attacker"</span>: { <span class="k">"framework"</span>: <span class="s">"pyrit"</span>,  <span class="k">"model"</span>: <span class="s">"glm-4.7"</span> },
   <span class="k">"victim"</span>:   { <span class="k">"range"</span>: <span class="s">"shopware-claude-commerce"</span>, <span class="k">"model"</span>: <span class="s">"claude-sonnet-4-6"</span> },
   <span class="k">"episodes"</span>: <span class="n">15</span>,
@@ -245,21 +459,22 @@
   <span class="k">"bySurface"</span>: { <span class="s">"exfil"</span>: { <span class="k">"episodes"</span>: <span class="n">5</span>, <span class="k">"asr"</span>: <span class="n">0.60</span> } },
   <span class="k">"submittedBy"</span>: <span class="s">"your-lab"</span>, <span class="k">"date"</span>: <span class="s">"2026-12-01"</span>, <span class="k">"artifacts"</span>: <span class="s">"link-to-logs"</span>
 }</pre>
-    <p class="sub">Submissions must include raw episode artifacts; we recompute ASR from <code>result-&lt;N&gt;.json</code> files and reject self-reported scores that the artifacts do not support.</p>
+    <p class="submit-note">Submissions must include raw episode artifacts; we recompute ASR from <code>result-&lt;N&gt;.json</code> files and reject self-reported scores that the artifacts do not support.</p>
   </section>
 
 </main>
 
 <footer>
-  <div class="wrap cols">
-    <div>
-      <b>GreyZone</b><br>
+  <div class="container cols">
+    <div class="col">
+      <b>GreyZone</b>
       A benchmark of 10 threat ranges for red-teaming LLM agents in real applications.<br>
-      Repository: <a href="https://github.com/greyzone-bench" style="color:inherit">github.com/greyzone-bench</a>
+      Repository: <a href="https://github.com/greyzone-bench" style="color:inherit">github.com/greyzone-bench</a><br><br>
+      Each victim application retains its upstream license; see the per-range attribution notes.
     </div>
-    <div>
+    <div class="col">
       <details>
-        <summary>Citation</summary>
+        <summary>BibTeX</summary>
         <pre id="bibtex">@dataset{greyzone2026,
   title  = {GreyZone: Red-Teaming LLM Agents in Real Applications},
   year   = {2026},
@@ -267,7 +482,6 @@
   howpublished = {https://greyzone-bench.github.io/}
 }</pre>
       </details>
-      Each victim application retains its upstream license; see the per-range attribution notes.
     </div>
   </div>
 </footer>
@@ -295,22 +509,24 @@ function renderBanner(data) {
 /* ---------- results table ---------- */
 const COLUMNS = {
   attacker: [
+    { key: "rank",  label: "#", num: true, render: () => "", sort: null },
     { key: "attacker.framework", label: "Attacker", render: r => `<span class="framework">${esc(r.attacker.framework)}</span><br><span class="model">${esc(r.attacker.model || "")}</span>`, sort: (r => r.attacker.framework) },
     { key: "victim.range",       label: "Victim range", render: r => esc(r.victim.range), sort: (r => r.victim.range) },
     { key: "victim.model",       label: "Victim model", render: r => `<span class="model">${esc(r.victim.model || "")}</span>`, sort: (r => r.victim.model || ""), cls: "hide-sm" },
-    { key: "asr",                label: "ASR", num: true, render: r => bar(r.asr), sort: (r => r.asr) },
+    { key: "asr",                label: "ASR", num: true, render: r => meter(r.asr), sort: (r => r.asr) },
     { key: "authenticity",       label: "Authenticity", num: true, render: r => pct(r.authenticity), sort: (r => r.authenticity) },
-    { key: "controlFalsePositive", label: "Control FP", num: true, render: r => `<span class="ok">${pct(r.controlFalsePositive)}</span>`, sort: (r => r.controlFalsePositive) },
+    { key: "controlFalsePositive", label: "Control FP", num: true, render: r => `<span class="${r.controlFalsePositive === 0 ? "ok" : "muted"}">${pct(r.controlFalsePositive)}</span>`, sort: (r => r.controlFalsePositive) },
     { key: "noReplyRate",        label: "No-reply", num: true, render: r => pct(r.noReplyRate), sort: (r => r.noReplyRate), cls: "hide-sm" },
     { key: "episodes",           label: "Episodes", num: true, render: r => esc(r.episodes), sort: (r => r.episodes) },
     { key: "date",               label: "Date", render: r => esc(r.date || ""), sort: (r => r.date || ""), cls: "hide-sm" },
   ],
   victim: [
+    { key: "rank",  label: "#", num: true, render: () => "", sort: null },
     { key: "victim.range",       label: "Victim range", render: r => `<span class="framework">${esc(r.victim.range)}</span><br><span class="model">${esc(r.victim.model || "")}</span>`, sort: (r => r.victim.range) },
     { key: "attacker.framework", label: "Attacker", render: r => `${esc(r.attacker.framework)}<br><span class="model">${esc(r.attacker.model || "")}</span>`, sort: (r => r.attacker.framework) },
-    { key: "asr",                label: "ASR", num: true, render: r => bar(r.asr), sort: (r => r.asr) },
+    { key: "asr",                label: "ASR", num: true, render: r => meter(r.asr), sort: (r => r.asr) },
     { key: "authenticity",       label: "Authenticity", num: true, render: r => pct(r.authenticity), sort: (r => r.authenticity) },
-    { key: "controlFalsePositive", label: "Control FP", num: true, render: r => `<span class="ok">${pct(r.controlFalsePositive)}</span>`, sort: (r => r.controlFalsePositive) },
+    { key: "controlFalsePositive", label: "Control FP", num: true, render: r => `<span class="${r.controlFalsePositive === 0 ? "ok" : "muted"}">${pct(r.controlFalsePositive)}</span>`, sort: (r => r.controlFalsePositive) },
     { key: "noReplyRate",        label: "No-reply", num: true, render: r => pct(r.noReplyRate), sort: (r => r.noReplyRate), cls: "hide-sm" },
     { key: "episodes",           label: "Episodes", num: true, render: r => esc(r.episodes), sort: (r => r.episodes) },
     { key: "date",               label: "Date", render: r => esc(r.date || ""), sort: (r => r.date || ""), cls: "hide-sm" },
@@ -324,16 +540,17 @@ let RESULTS = [];
 
 function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function pct(x) { return (x == null) ? "—" : (100 * x).toFixed(0) + "%"; }
-function bar(x) {
+function meter(x) {
   const v = (x == null) ? 0 : Math.max(0, Math.min(1, x));
-  return `<span class="bar"><span class="track"><span class="fill" style="width:${(100 * v).toFixed(1)}%"></span></span><span class="val">${pct(x)}</span></span>`;
+  return `<span class="meter"><span class="meter-val">${pct(x)}</span>` +
+         `<span class="meter-track"><span class="meter-fill" style="width:${(100 * v).toFixed(1)}%"></span></span></span>`;
 }
 
 function renderResults() {
   const cols = COLUMNS[currentView];
   const head = document.getElementById("results-head");
   head.innerHTML = cols.map(c =>
-    `<th class="${c.num ? "num " : ""}${c.cls || ""}${c.sort ? "" : " no-sort"}" data-key="${c.key}">` +
+    `<th class="${c.num ? "num " : ""}${c.cls || ""}${c.sort ? " sortable" : " no-sort"}" ${c.sort ? `data-key="${c.key}"` : ""}>` +
     esc(c.label) +
     (c.key === sortKey ? `<span class="arrow">${sortDir < 0 ? "▾" : "▴"}</span>` : "") +
     `</th>`
@@ -342,7 +559,7 @@ function renderResults() {
   const body = document.getElementById("results-body");
   if (!RESULTS.length) {
     const n = cols.length;
-    body.innerHTML = `<tr class="empty-row"><td colspan="${n}">No results yet — the first evaluation campaigns are running.<br><br><a class="cta" href="#submit">Run the benchmark and submit yours ↗</a></td></tr>`;
+    body.innerHTML = `<tr class="no-results"><td colspan="${n}">No results yet — the first evaluation campaigns are running.<br><br><a class="cta" href="#submit">Run the benchmark and submit yours ↗</a></td></tr>`;
     return;
   }
   const sorted = [...RESULTS].sort((a, b) => {
@@ -351,7 +568,12 @@ function renderResults() {
     if (typeof va === "number" && typeof vb === "number") return (va - vb) * sortDir;
     return String(va).localeCompare(String(vb)) * sortDir;
   });
-  body.innerHTML = sorted.map(r => "<tr>" + cols.map(c => `<td class="${c.num ? "num " : ""}${c.cls || ""}">${c.render(r)}</td>`).join("") + "</tr>").join("");
+  body.innerHTML = sorted.map((r, i) =>
+    "<tr>" + cols.map(c => {
+      const content = (c.key === "rank") ? `<span class="rank">${i + 1}</span>` : c.render(r);
+      return `<td class="${c.num ? "num " : ""}${c.cls || ""}">${content}</td>`;
+    }).join("") + "</tr>"
+  ).join("");
 
   head.querySelectorAll("th[data-key]").forEach(th => th.addEventListener("click", () => {
     const k = th.dataset.key;
@@ -378,11 +600,11 @@ const TAXONOMY = [
   "Propagation & impersonation — phishing outbound, fake identities, token promotion",
 ];
 function renderTaxonomy() {
-  document.getElementById("taxonomy-chips").innerHTML = TAXONOMY.map(t => {
+  document.getElementById("taxonomy-cards").innerHTML = TAXONOMY.map(t => {
     const i = t.indexOf("—");
     const name = i > 0 ? t.slice(0, i).trim() : t;
-    const rest = i > 0 ? t.slice(i).trim() : "";
-    return `<span class="chip"><b>${esc(name)}</b> ${esc(rest)}</span>`;
+    const rest = i > 0 ? t.slice(i).replace(/^\s*—\s*/, "") : "";
+    return `<div class="tcard"><b>${esc(name)}</b><span>${esc(rest)}</span></div>`;
   }).join("");
 }
 
@@ -392,10 +614,10 @@ function renderRanges(data) {
   body.innerHTML = data.ranges.map(r =>
     `<tr>
       <td><span class="range-dir">${esc(r.dir)}</span></td>
-      <td>${esc(r.upstream)}<br><span class="model">${esc(r.domain)}</span></td>
+      <td>${esc(r.upstream)}<span class="victim-sub">${esc(r.domain)}</span></td>
       <td class="num"><span class="scen-count">${r.goals}</span></td>
       <td><span class="surfaces">${r.surfaces.map(s => `<span class="surface">${esc(s)}</span>`).join("")}</span></td>
-      <td class="hide-sm">${r.channels.map(esc).join(", ")}</td>
+      <td class="hide-sm"><span class="channels">${esc(r.channels.join(", "))}</span></td>
     </tr>`
   ).join("");
 }
