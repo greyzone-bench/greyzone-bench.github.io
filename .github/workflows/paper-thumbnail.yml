@@ -1,0 +1,48 @@
+name: paper-thumbnail
+
+# Keeps assets/paper-first-page.png in sync with the latest arXiv version of
+# the paper (data/paper.json). The daily check is one arXiv API call; the PDF
+# is only downloaded and re-rendered when a new version (v2, v3, …) appears.
+# Run it by hand from the Actions tab right after posting a new version.
+
+on:
+  schedule:
+    - cron: "23 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    permissions:
+      contents: write
+      pages: write
+    concurrency:
+      group: paper-thumbnail
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+      - run: python3 scripts/update_paper_thumbnail.py
+      - name: Commit refreshed thumbnail
+        id: thumb
+        run: |
+          git config user.name  "greyzone-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/paper-first-page.png data/paper.json
+          if git diff --cached --quiet; then
+            echo "thumbnail unchanged"
+          else
+            git commit -m "assets: refresh paper thumbnail from arXiv [skip ci]"
+            git pull --rebase origin main
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      # GITHUB_TOKEN pushes do not trigger branch-based Pages builds.
+      - name: Publish updated thumbnail
+        if: steps.thumb.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"

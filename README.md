@@ -14,9 +14,12 @@ data/
   results.json                # generated leaderboard rows
   submissions/                # one campaign JSON file per PR
   ranges.json                 # static range catalog (generated from the dataset)
+  paper.json                  # arXiv id + version the paper thumbnail was rendered from
+assets/                       # paper thumbnail (generated), overview figure, video
 scripts/
   validate_ranges.py          # cross-checks counts and models against the dataset checkout
   merge_submissions.py        # validates and aggregates campaign files
+  update_paper_thumbnail.py   # re-renders the paper thumbnail from the latest arXiv version
 ```
 
 ## Status
@@ -42,6 +45,17 @@ python3 -m http.server 8099
 This repo is the org's root Pages repo (`greyzone-bench.github.io`), so Pages
 serves it at the org root automatically — every push to `main` updates the
 live site within about a minute, no CI workflow required.
+
+## Paper thumbnail
+
+The paper lives on arXiv (`data/paper.json → arxivId`); the site links there
+and keeps no PDF. `assets/paper-first-page.png` is generated, not edited: the
+`paper-thumbnail` workflow checks the arXiv API daily and, when a new version
+appears, renders its first page, commits the PNG and requests a Pages build.
+After posting a new version, run the workflow from the Actions tab (or
+locally: `python3 scripts/update_paper_thumbnail.py`, needs `pdftoppm`) to
+update it right away. GitHub pauses scheduled workflows after 60 days without
+repository activity; re-enable it from the Actions tab if that happens.
 
 ## Syncing catalog data from the dataset
 
