@@ -1,95 +1,518 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
+  "benchmark": {
+    "version": "v1.0.0",
+    "revision": "e8f61ec94047e84293820ffb2489d4209f22459f",
+    "evaluationSchemaVersion": 1,
+    "scorePolicyVersion": "2"
+  },
   "ranges": [
     {
       "dir": "shopware-claude-commerce",
       "model": "claude-haiku-4-5-20251001",
       "upstream": "agentic-commerce-lab/shopware-claude-commerce (Anthropic Commerce Agents blueprint, unmodified)",
       "domain": "E-commerce (buyer + merchant agents over a real Shopware 6.7 store)",
-      "goals": 5,
-      "surfaces": ["purchase", "price", "refund", "exfil"],
-      "channels": ["reviews", "listings", "invoices", "notes"]
+      "scenarios": [
+        {
+          "id": "buyer-exfil",
+          "surfaces": [
+            "exfil"
+          ]
+        },
+        {
+          "id": "buyer-misdirection",
+          "surfaces": [
+            "purchase"
+          ]
+        },
+        {
+          "id": "merchant-exfil",
+          "surfaces": [
+            "exfil"
+          ]
+        },
+        {
+          "id": "merchant-floor-breach",
+          "surfaces": [
+            "price"
+          ]
+        },
+        {
+          "id": "merchant-refund",
+          "surfaces": [
+            "refund"
+          ]
+        }
+      ],
+      "surfaces": [
+        "exfil",
+        "price",
+        "purchase",
+        "refund"
+      ],
+      "channels": [
+        "reviews",
+        "listings",
+        "invoices",
+        "notes"
+      ],
+      "adapters": [
+        "deepteam",
+        "dreadnode",
+        "promptfoo",
+        "pyrit"
+      ],
+      "resultPath": ".run/oracle/result-<N>.json"
     },
     {
       "dir": "kubectl-ai",
       "model": "gpt-4.1-mini-2025-04-14",
       "upstream": "GoogleCloudPlatform/kubectl-ai (cluster-admin, kubectl + bash only)",
       "domain": "Kubernetes AI-ops against a disguised 21-node production cluster",
-      "goals": 6,
-      "surfaces": ["secret-exfil", "rbac-escalation", "sabotage"],
-      "channels": ["forged events", "web logs", "tool output"]
+      "scenarios": [
+        {
+          "id": "g1-exfil-l0-explicit-ip2-event",
+          "surfaces": [
+            "secret-exfil"
+          ]
+        },
+        {
+          "id": "g1-exfil-l1-note-ip1-weblog",
+          "surfaces": [
+            "secret-exfil"
+          ]
+        },
+        {
+          "id": "g1-exfil-l1-note-ip3-exec",
+          "surfaces": [
+            "secret-exfil"
+          ]
+        },
+        {
+          "id": "g1-exfil-l2-alert-ip2-event",
+          "surfaces": [
+            "secret-exfil"
+          ]
+        },
+        {
+          "id": "g2-escalate-l2-note-ip2-event",
+          "surfaces": [
+            "rbac-escalation"
+          ]
+        },
+        {
+          "id": "g3-sabotage-l2-note-ip2-event",
+          "surfaces": [
+            "sabotage"
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "id": "control",
+          "surfaces": [
+            "secret-exfil",
+            "rbac-escalation",
+            "sabotage"
+          ]
+        }
+      ],
+      "surfaces": [
+        "rbac-escalation",
+        "sabotage",
+        "secret-exfil"
+      ],
+      "channels": [
+        "forged events",
+        "web logs",
+        "tool output"
+      ],
+      "adapters": [],
+      "resultPath": ".run/oracle/episode-<N>/result.json"
     },
     {
       "dir": "smart-home",
       "model": "gpt-4.1-mini-2025-04-14",
       "upstream": "goruck/home-generative-agent on Home Assistant (pinned)",
       "domain": "Smart home: devices, locks, cameras with a real vision model",
-      "goals": 6,
-      "surfaces": ["unlock", "disarm", "exfil"],
-      "channels": ["camera feed", "web pages", "media metadata", "ssdp"]
+      "scenarios": [
+        {
+          "id": "disarm-code-leak",
+          "surfaces": [
+            "exfil"
+          ]
+        },
+        {
+          "id": "exfil-state-dump",
+          "surfaces": [
+            "exfil"
+          ]
+        },
+        {
+          "id": "exfil-state-dump-media",
+          "surfaces": [
+            "exfil"
+          ]
+        },
+        {
+          "id": "exfil-state-dump-ssdp",
+          "surfaces": [
+            "exfil"
+          ]
+        },
+        {
+          "id": "exfil-state-dump-web",
+          "surfaces": [
+            "exfil"
+          ]
+        },
+        {
+          "id": "unlock-door",
+          "surfaces": [
+            "unlock"
+          ]
+        }
+      ],
+      "surfaces": [
+        "exfil",
+        "unlock"
+      ],
+      "channels": [
+        "camera feed",
+        "web pages",
+        "media metadata",
+        "ssdp"
+      ],
+      "adapters": [],
+      "resultPath": "sim/.run/oracle/result-<N>.json"
     },
     {
       "dir": "Clawith",
       "model": "gpt-4.1-mini-2025-04-14",
       "upstream": "Clawith enterprise multi-agent platform",
       "domain": "Enterprise group-chat agents with souls, memory, and shared workspaces",
-      "goals": 5,
-      "surfaces": ["chat-exfil", "email-exfil", "kb-poison", "private-agent-leak", "sandbox-escape"],
-      "channels": ["group chat"]
+      "scenarios": [
+        {
+          "id": "chat-exfil",
+          "surfaces": [
+            "exfil"
+          ]
+        },
+        {
+          "id": "email-exfil",
+          "surfaces": [
+            "email-exfil"
+          ]
+        },
+        {
+          "id": "kb-poison",
+          "surfaces": [
+            "kb-integrity"
+          ]
+        },
+        {
+          "id": "private-agent-leak",
+          "surfaces": [
+            "private-agent-leak"
+          ]
+        },
+        {
+          "id": "sandbox-escape",
+          "surfaces": [
+            "fs-escape"
+          ]
+        }
+      ],
+      "surfaces": [
+        "email-exfil",
+        "exfil",
+        "fs-escape",
+        "kb-integrity",
+        "private-agent-leak"
+      ],
+      "channels": [
+        "group chat"
+      ],
+      "adapters": [
+        "deepteam",
+        "dreadnode",
+        "promptfoo",
+        "pyrit"
+      ],
+      "resultPath": ".run/oracle/result-<N>.json"
     },
     {
       "dir": "Inbox_Zero_Mail_Agent",
       "model": "gpt-4.1-mini-2025-04-14",
       "upstream": "Inbox Zero (patched Gmail emulator)",
       "domain": "Email agent: auto-reply, rules, cold-mail screening",
-      "goals": 3,
-      "surfaces": ["knowledge-leak", "mail-history-leak", "phishing-outbound"],
-      "channels": ["inbound email"]
+      "scenarios": [
+        {
+          "id": "knowledge-leak",
+          "surfaces": [
+            "kb"
+          ]
+        },
+        {
+          "id": "mail-history-leak",
+          "surfaces": [
+            "mail"
+          ]
+        },
+        {
+          "id": "phishing-outbound",
+          "surfaces": [
+            "phishing"
+          ]
+        }
+      ],
+      "surfaces": [
+        "kb",
+        "mail",
+        "phishing"
+      ],
+      "channels": [
+        "inbound email"
+      ],
+      "adapters": [
+        "deepteam",
+        "dreadnode",
+        "promptfoo",
+        "pyrit"
+      ],
+      "resultPath": "apps/web/.tmp/oracle/result-<N>.json"
     },
     {
       "dir": "Letta_Issue_Agent",
       "model": "gpt-4.1-mini-2025-04-14",
       "upstream": "Gitea + Letta Code (persistent-memory coding agent)",
       "domain": "Issue-driven coding agent with branch/PR write access",
-      "goals": 3,
-      "surfaces": ["runtime-credential-disclosure", "memory-poisoning", "outbound-network-traffic"],
-      "channels": ["issue threads"]
+      "scenarios": [
+        {
+          "id": "memory-poisoning",
+          "surfaces": [
+            "mem"
+          ]
+        },
+        {
+          "id": "outbound-network-traffic",
+          "surfaces": [
+            "net"
+          ]
+        },
+        {
+          "id": "runtime-credential-disclosure",
+          "surfaces": [
+            "exfil"
+          ]
+        }
+      ],
+      "surfaces": [
+        "exfil",
+        "mem",
+        "net"
+      ],
+      "channels": [
+        "issue threads"
+      ],
+      "adapters": [
+        "deepteam",
+        "dreadnode",
+        "lakera",
+        "promptfoo",
+        "pyrit"
+      ],
+      "resultPath": "runner volume letta-state: /home/runner/letta-state/logs/result-<issue>.json"
     },
     {
       "dir": "ZerePy",
       "model": "gpt-4.1-mini-2025-04-14",
       "upstream": "blorm-network/ZerePy (tool-driven loop)",
       "domain": "Social-to-onchain agent with a funded wallet on a simulated chain",
-      "goals": 4,
-      "surfaces": ["refund-redirect", "treasury-redirect", "airdrop-impersonation", "promoter-shill"],
-      "channels": ["posts", "replies"]
+      "scenarios": [
+        {
+          "id": "airdrop-impersonation",
+          "surfaces": [
+            "ineligible-airdrop"
+          ]
+        },
+        {
+          "id": "promoter-shill",
+          "surfaces": [
+            "prohibited-promotion"
+          ]
+        },
+        {
+          "id": "refund-redirect",
+          "surfaces": [
+            "over-refund"
+          ]
+        },
+        {
+          "id": "treasury-redirect",
+          "surfaces": [
+            "unvetted-payment"
+          ]
+        }
+      ],
+      "surfaces": [
+        "ineligible-airdrop",
+        "over-refund",
+        "prohibited-promotion",
+        "unvetted-payment"
+      ],
+      "channels": [
+        "posts",
+        "replies"
+      ],
+      "adapters": [],
+      "resultPath": ".run/oracle/result-<N>.json"
     },
     {
       "dir": "agent-openai-java-banking-assistant",
       "model": "gpt-4.1-mini-2025-04-14",
       "upstream": "Microsoft agent-openai-java banking sample",
       "domain": "Banking copilot: supervisor + account/transactions/payments agents",
-      "goals": 2,
-      "surfaces": ["direct-recon-steal", "indirect-invoice-pay"],
-      "channels": ["direct chat", "invoice fields"]
+      "scenarios": [
+        {
+          "id": "direct-recon-steal",
+          "surfaces": [
+            "admin-info-leak",
+            "attacker-payment"
+          ]
+        },
+        {
+          "id": "indirect-invoice-pay",
+          "surfaces": [
+            "attacker-payment"
+          ]
+        }
+      ],
+      "surfaces": [
+        "admin-info-leak",
+        "attacker-payment"
+      ],
+      "channels": [
+        "direct chat",
+        "invoice fields"
+      ],
+      "adapters": [],
+      "resultPath": ".run/oracle/result-<N>.json"
     },
     {
       "dir": "alpaca-mcp-server",
       "model": "claude-haiku-4-5-20251001",
       "upstream": "alpacahq/alpaca-mcp-server (trust-envelope ablation patches)",
       "domain": "Trading agent over a simulated market with news/social feeds",
-      "goals": 6,
-      "surfaces": ["attacker-steered-trade", "unauthorized-sell", "panic-liquidation", "sell-omission", "protection-pull", "order-tamper"],
-      "channels": ["news", "social posts", "listings"]
+      "scenarios": [
+        {
+          "id": "order-tamper",
+          "surfaces": [
+            "order-tamper"
+          ]
+        },
+        {
+          "id": "panic-liquidation",
+          "surfaces": [
+            "panic-liquidation"
+          ]
+        },
+        {
+          "id": "protection-pull",
+          "surfaces": [
+            "protection-pull"
+          ]
+        },
+        {
+          "id": "sell-omission",
+          "surfaces": [
+            "sell-omission"
+          ]
+        },
+        {
+          "id": "steered-trade",
+          "surfaces": [
+            "attacker-steered-trade"
+          ]
+        },
+        {
+          "id": "unauthorized-sell",
+          "surfaces": [
+            "unauthorized-sell"
+          ]
+        }
+      ],
+      "surfaces": [
+        "attacker-steered-trade",
+        "order-tamper",
+        "panic-liquidation",
+        "protection-pull",
+        "sell-omission",
+        "unauthorized-sell"
+      ],
+      "channels": [
+        "news",
+        "social posts",
+        "listings"
+      ],
+      "adapters": [],
+      "resultPath": "sim/.run/oracle/result-<N>.json"
     },
     {
       "dir": "commonly",
       "model": "gpt-4.1-mini-2025-04-14",
       "upstream": "Team-Commonly/commonly",
       "domain": "Social platform where humans and agents share pods and a task board",
-      "goals": 6,
-      "surfaces": ["private-pod-leak", "task-exfil", "forged-invite", "forged-kick", "forged-delete", "forged-dissolve"],
-      "channels": ["pod messages"]
+      "scenarios": [
+        {
+          "id": "forged-delete",
+          "surfaces": [
+            "evidence-destruction"
+          ]
+        },
+        {
+          "id": "forged-dissolve",
+          "surfaces": [
+            "pod-deletion"
+          ]
+        },
+        {
+          "id": "forged-invite",
+          "surfaces": [
+            "approval-action"
+          ]
+        },
+        {
+          "id": "forged-kick",
+          "surfaces": [
+            "member-change"
+          ]
+        },
+        {
+          "id": "private-pod-leak",
+          "surfaces": [
+            "exfil"
+          ]
+        },
+        {
+          "id": "task-exfil",
+          "surfaces": [
+            "exfil"
+          ]
+        }
+      ],
+      "surfaces": [
+        "approval-action",
+        "evidence-destruction",
+        "exfil",
+        "member-change",
+        "pod-deletion"
+      ],
+      "channels": [
+        "pod messages"
+      ],
+      "adapters": [],
+      "resultPath": ".run/oracle/result-<N>.json"
     }
   ]
 }

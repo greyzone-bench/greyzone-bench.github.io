@@ -1,8 +1,11 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "announcement": {
     "announcementDate": "December 2026",
     "message": "Evaluations are in progress. First results will be announced in December 2026."
+  },
+  "benchmark": {
+    "version": "v1.0.0"
   },
   "results": []
 }

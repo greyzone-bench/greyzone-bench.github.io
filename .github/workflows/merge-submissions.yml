@@ -1,15 +1,16 @@
 name: merge-submissions
 
-# Submission flow: PRs add one file under data/submissions/. On pull_request
-# we validate them (status check); after merge to main we fold every
-# submission back into data/results.json, commit, and Pages redeploys.
+# Submission flow: PRs add one campaign file under data/submissions/. On
+# pull_request we validate every episode envelope and compute the metrics
+# (status check); after merge to main we regenerate data/results.json from
+# all submission files, commit, and request a Pages build.
 
 on:
   push:
     branches: [main]
     paths: ["data/submissions/**", "data/ranges.json", "scripts/merge_submissions.py", ".github/workflows/merge-submissions.yml"]
   pull_request:
-    paths: ["data/submissions/**", "data/ranges.json", "scripts/merge_submissions.py", "scripts/test_merge_submissions.py", ".github/workflows/merge-submissions.yml"]
+    paths: ["data/submissions/**", "data/ranges.json", "schemas/**", "scripts/merge_submissions.py", "scripts/build_submission.py", "scripts/test_merge_submissions.py", ".github/workflows/merge-submissions.yml"]
 
 permissions:
   contents: read
@@ -23,6 +24,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      # Only the schema-consistency test needs it; the merger itself is stdlib-only.
+      - run: python -m pip install --quiet "jsonschema==4.26.0"
       - run: python -m unittest discover -s scripts -p test_merge_submissions.py
       - run: python scripts/merge_submissions.py --check
 

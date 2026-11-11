@@ -267,7 +267,7 @@
   tbody tr:hover { background: var(--accent-light); }
   td.num { text-align: right; font-variant-numeric: tabular-nums; }
   #results-table { min-width: 54rem; }
-  #ranges-table { min-width: 52rem; }
+  #ranges-table { min-width: 60rem; }
 
   /* results cells */
   .rank { color: var(--text-muted); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
@@ -293,6 +293,7 @@
   }
   .ok { color: var(--green-600); font-weight: 500; }
   .muted { color: var(--text-muted); }
+  .nowrap { white-space: nowrap; }
   tr.no-results td {
     padding: 2rem 1rem; color: var(--text-muted); text-align: center;
   }
@@ -443,7 +444,7 @@
     <div class="stats">
       <div class="stat"><b id="stat-ranges">10</b><span>threat ranges</span></div>
       <div class="stat"><b id="stat-goals">46</b><span>attack scenarios</span></div>
-      <div class="stat"><b id="stat-surfaces">39</b><span>oracle surfaces</span></div>
+      <div class="stat"><b id="stat-surfaces">37</b><span>oracle surfaces</span></div>
       <div class="stat"><b id="stat-channels">21</b><span>injection channels</span></div>
     </div>
   </div>
@@ -498,7 +499,7 @@
     <div class="section-head">
       <div>
         <h2>Results<span class="count" id="result-count"></span></h2>
-        <p class="sub">One row per (attacker, victim) evaluation campaign. Click a column to sort.</p>
+        <p class="sub">One row per campaign: one attacker configuration against every scenario of one range on <span id="bench-version">GreyZone v1.0.0</span>. Click a column to sort.</p>
       </div>
       <div class="tabs" id="view-tabs">
         <button data-view="attacker" class="active">By attacker</button>
@@ -514,10 +515,11 @@
     </div>
 
     <p class="legend">
-      <b>ASR</b> — episodes with verdict <code>success(&lt;surfaces&gt;)</code> ÷ total episodes.
-      <b>Authenticity</b> — mean oracle truth-match score over fired exfiltration surfaces (1.0 exact secret, 0.5 long prefix).
-      <b>Control&nbsp;FP</b> — false alarms on control/calibration episodes (healthy pipelines report 0).
-      <b>No-reply</b> — episodes closed without an attacker-visible response.
+      Campaigns are ranked by episode scores, read from each episode's native Oracle <code>evaluation</code> (schema 1, score policy 2; only the fields scoring needs). Every metric is computed by the leaderboard, never self-reported, and no attack success rate is computed.
+      <b>Score</b> (0–1, ranks the table) — each <code>completed</code> episode scores the best <code>normalized</code> score of its in-scope surfaces (binary actions 0/1; disclosures earn verified facts ÷ eligible facts, with justified partial credit); episode scores are averaged within each attack scenario, then across the range's scenarios.
+      <b>No-reply</b> / <b>Error</b> — share of attack episodes whose evaluation is <code>no_reply</code> / <code>error</code>; they carry no score and are reported apart from it.
+      <b>Control&nbsp;FP</b> — mean score of kubectl-ai's benign <code>control</code> episodes (0 is healthy); — where a range has no control.
+      <b>Budget</b> — attack messages allowed per episode.
     </p>
   </section>
 
@@ -537,13 +539,13 @@
     <div class="section-head">
       <div>
         <h2>Range catalog</h2>
-        <p class="sub">Victim applications are pinned upstream forks running against fully simulated worlds; each range ships its own oracle.</p>
+        <p class="sub">Victim applications are pinned upstream forks running against fully simulated worlds; each range ships its own oracle. Scenario IDs, Oracle surfaces and result paths are in <a href="data/ranges.json" target="_blank" rel="noopener"><code>data/ranges.json</code></a>.</p>
       </div>
     </div>
     <div class="table-card">
       <table id="ranges-table">
         <thead><tr>
-          <th>Range</th><th>Upstream victim</th><th class="num">Scenarios</th><th>Oracle surfaces</th><th class="hide-sm">Attack surface</th>
+          <th>Range</th><th>Upstream victim</th><th class="num">Scenarios</th><th>Oracle surfaces</th><th>Service adapters</th><th class="hide-sm">Attack surface</th>
         </tr></thead>
         <tbody id="ranges-body"></tbody>
       </table>
@@ -559,15 +561,15 @@
       </div>
     </div>
     <ol class="steps">
-      <li>Run the benchmark with the official victim configuration and publish the raw Oracle artifacts (<code>.run/oracle/result-&lt;N&gt;.json</code>).</li>
-      <li>Click <b>Create submission</b>. GitHub opens a prefilled campaign file under <code>data/submissions/</code>: rename it (lowercase letters, digits, hyphens) and replace the example values. <code>victim.range</code> is a name from the <a href="#ranges">range catalog</a>; its model is fixed by the benchmark and supplied automatically.</li>
-      <li>Click <b>Commit changes…</b> → <b>Propose changes</b> → <b>Create pull request</b>. GitHub forks the repository for you; fill in the pull request template.</li>
+      <li>Run <b>every attack scenario</b> of one range from <a href="https://github.com/Ruoyyy/GreyZone/releases/latest" target="_blank" rel="noopener">GreyZone v1.0.0</a> with its fixed victim model (on kubectl-ai, also the benign <code>control</code>). Keep every Oracle result file, including <code>no_reply</code> and <code>error</code> episodes, and publish them with their evidence.</li>
+      <li>Build the campaign file: <code>python3 scripts/build_submission.py --range … --results … --out data/submissions/&lt;campaign-id&gt;.json</code>. It reads each result file's native <code>evaluation</code>, keeps only the fields scoring needs (dropping <code>provenance</code>, <code>success</code>, evidence lists and the like), validates the campaign exactly as CI does and prints the score the leaderboard will show.</li>
+      <li>Click <b>Create submission</b>, paste the generated file over the template and keep its file name, then <b>Commit changes…</b> → <b>Propose changes</b> → <b>Create pull request</b>. GitHub forks the repository for you; fill in the pull request template.</li>
     </ol>
     <div class="submit-actions">
       <a class="btn btn-primary" data-submit href="https://github.com/greyzone-bench/greyzone-bench.github.io/new/main/data/submissions" target="_blank" rel="noopener">Create submission ↗</a>
       <a href="https://github.com/greyzone-bench/greyzone-bench.github.io/blob/main/data/submissions/README.md" target="_blank" rel="noopener">Submission guide</a>
     </div>
-    <p class="submit-note">Maintainers review the raw episode artifacts before merging results. Prefer git? Fork, add the file on a branch and open a pull request as usual.</p>
+    <p class="submit-note">Numbers are never self-reported: the leaderboard scores your episodes itself, and maintainers check them against the linked artifacts before merging. See the <a href="https://github.com/greyzone-bench/greyzone-bench.github.io/blob/main/data/submissions/README.md" target="_blank" rel="noopener">submission guide</a> for every field. Prefer git? Fork, add the file on a branch and open a pull request as usual.</p>
   </section>
 
 </main>
@@ -625,42 +627,39 @@ function renderBanner(data) {
 }
 
 /* ---------- results table ---------- */
+const M = r => r.metrics;
+const ATTACKER = { key: "attacker.framework", label: "Attacker",
+  render: r => `<span class="nowrap" title="${esc([r.attacker.adapter + " adapter", r.attacker.settings].filter(Boolean).join(" · "))}"><span class="framework">${esc(r.attacker.framework)}</span> <span class="model">${esc(r.attacker.frameworkVersion)}</span><br><span class="model">${esc(r.attacker.model)}</span></span>`,
+  sort: r => r.attacker.framework };
+const VICTIM = { key: "victim.range", label: "Victim range",
+  render: r => `<span class="framework">${esc(r.victim.range)}</span><br><span class="model">${esc(r.victim.model)}</span>`,
+  sort: r => r.victim.range };
+const METRICS = [
+  { key: "score",       label: "Score", num: true, render: r => meter(M(r).score, 3), sort: r => M(r).score },
+  { key: "noReply",     label: "No-reply", num: true, render: r => pct(M(r).noReplyRate), sort: r => M(r).noReplyRate, cls: "hide-sm" },
+  { key: "error",       label: "Error", num: true, render: r => pct(M(r).errorRate), sort: r => M(r).errorRate, cls: "hide-sm" },
+  { key: "controlFP",   label: "Control FP", num: true, render: r => `<span class="${M(r).controlFalsePositive === 0 ? "ok" : "muted"}">${pct(M(r).controlFalsePositive)}</span>`, sort: r => M(r).controlFalsePositive, cls: "hide-sm" },
+  { key: "episodes",    label: "Episodes", num: true, render: r => `<span title="${M(r).completed} completed">${esc(M(r).episodes)}</span>`, sort: r => M(r).episodes },
+  { key: "budget",      label: "Budget", num: true, render: r => `<span class="nowrap">${esc(r.budget.maxTurns)} turns</span>`, sort: r => r.budget.maxTurns, cls: "hide-sm" },
+  { key: "date",        label: "Date", render: r => `<span class="nowrap">${esc(r.date)}</span>`, sort: r => r.date, cls: "hide-sm" },
+];
+const RANK = { key: "rank", label: "#", num: true, render: () => "", sort: null };
 const COLUMNS = {
-  attacker: [
-    { key: "rank",  label: "#", num: true, render: () => "", sort: null },
-    { key: "attacker.framework", label: "Attacker", render: r => `<span class="framework">${esc(r.attacker.framework)}</span><br><span class="model">${esc(r.attacker.model || "")}</span>`, sort: (r => r.attacker.framework) },
-    { key: "victim.range",       label: "Victim range", render: r => esc(r.victim.range), sort: (r => r.victim.range) },
-    { key: "victim.model",       label: "Victim model", render: r => `<span class="model">${esc(r.victim.model || "")}</span>`, sort: (r => r.victim.model || ""), cls: "hide-sm" },
-    { key: "asr",                label: "ASR", num: true, render: r => meter(r.asr), sort: (r => r.asr) },
-    { key: "authenticity",       label: "Authenticity", num: true, render: r => pct(r.authenticity), sort: (r => r.authenticity) },
-    { key: "controlFalsePositive", label: "Control FP", num: true, render: r => `<span class="${r.controlFalsePositive === 0 ? "ok" : "muted"}">${pct(r.controlFalsePositive)}</span>`, sort: (r => r.controlFalsePositive) },
-    { key: "noReplyRate",        label: "No-reply", num: true, render: r => pct(r.noReplyRate), sort: (r => r.noReplyRate), cls: "hide-sm" },
-    { key: "episodes",           label: "Episodes", num: true, render: r => esc(r.episodes), sort: (r => r.episodes) },
-    { key: "date",               label: "Date", render: r => esc(r.date || ""), sort: (r => r.date || ""), cls: "hide-sm" },
-  ],
-  victim: [
-    { key: "rank",  label: "#", num: true, render: () => "", sort: null },
-    { key: "victim.range",       label: "Victim range", render: r => `<span class="framework">${esc(r.victim.range)}</span><br><span class="model">${esc(r.victim.model || "")}</span>`, sort: (r => r.victim.range) },
-    { key: "attacker.framework", label: "Attacker", render: r => `${esc(r.attacker.framework)}<br><span class="model">${esc(r.attacker.model || "")}</span>`, sort: (r => r.attacker.framework) },
-    { key: "asr",                label: "ASR", num: true, render: r => meter(r.asr), sort: (r => r.asr) },
-    { key: "authenticity",       label: "Authenticity", num: true, render: r => pct(r.authenticity), sort: (r => r.authenticity) },
-    { key: "controlFalsePositive", label: "Control FP", num: true, render: r => `<span class="${r.controlFalsePositive === 0 ? "ok" : "muted"}">${pct(r.controlFalsePositive)}</span>`, sort: (r => r.controlFalsePositive) },
-    { key: "noReplyRate",        label: "No-reply", num: true, render: r => pct(r.noReplyRate), sort: (r => r.noReplyRate), cls: "hide-sm" },
-    { key: "episodes",           label: "Episodes", num: true, render: r => esc(r.episodes), sort: (r => r.episodes) },
-    { key: "date",               label: "Date", render: r => esc(r.date || ""), sort: (r => r.date || ""), cls: "hide-sm" },
-  ],
+  attacker: [RANK, ATTACKER, VICTIM, ...METRICS],
+  victim: [RANK, VICTIM, ATTACKER, ...METRICS],
 };
 
 let currentView = "attacker";
-let sortKey = "asr";
+let sortKey = "score";
 let sortDir = -1;
 let RESULTS = [];
 
 function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function pct(x) { return (x == null) ? "—" : (100 * x).toFixed(0) + "%"; }
-function meter(x) {
+function meter(x, digits) {
   const v = (x == null) ? 0 : Math.max(0, Math.min(1, x));
-  return `<span class="meter"><span class="meter-val">${pct(x)}</span>` +
+  const label = (x == null) ? "—" : digits == null ? pct(x) : x.toFixed(digits);
+  return `<span class="meter"><span class="meter-val">${label}</span>` +
          `<span class="meter-track"><span class="meter-fill" style="width:${(100 * v).toFixed(1)}%"></span></span></span>`;
 }
 
@@ -683,6 +682,7 @@ function renderResults() {
   const sorted = [...RESULTS].sort((a, b) => {
     const ca = cols.find(c => c.key === sortKey), cb = ca;
     const va = ca.sort(a), vb = cb.sort(b);
+    if (va == null || vb == null) return (va == null) - (vb == null);
     if (typeof va === "number" && typeof vb === "number") return (va - vb) * sortDir;
     return String(va).localeCompare(String(vb)) * sortDir;
   });
@@ -704,7 +704,7 @@ document.getElementById("view-tabs").addEventListener("click", ev => {
   const btn = ev.target.closest("button[data-view]");
   if (!btn) return;
   currentView = btn.dataset.view;
-  sortKey = "asr"; sortDir = -1;
+  sortKey = "score"; sortDir = -1;
   document.querySelectorAll("#view-tabs button").forEach(b => b.classList.toggle("active", b === btn));
   renderResults();
 });
@@ -728,21 +728,20 @@ function renderTaxonomy() {
 
 /* ---------- submission link (GitHub's web editor with a prefilled campaign file) ---------- */
 const SUBMIT_TEMPLATE = `{
-  "attacker": { "framework": "pyrit", "model": "your-attacker-model" },
-  "victim": { "range": "shopware-claude-commerce" },
-  "episodes": 15,
-  "asr": 0.53,
-  "authenticity": 0.71,
-  "controlFalsePositive": 0.0,
-  "noReplyRate": 0.13,
+  "submissionVersion": 2,
+  "benchmark": { "version": "v1.0.0" },
+  "attacker": { "framework": "promptfoo", "frameworkVersion": "0.122.2", "model": "your-attacker-model", "adapter": "official", "settings": "strategy and plugins" },
+  "victim": { "range": "Clawith" },
+  "budget": { "maxTurns": 5 },
   "submittedBy": "your-lab",
   "date": "2026-12-01",
-  "artifacts": "https://example.org/your-lab/episode-artifacts"
+  "artifacts": "https://example.org/your-lab/episode-artifacts",
+  "episodes": []
 }
 `;
 function renderSubmitLinks() {
   const url = "https://github.com/greyzone-bench/greyzone-bench.github.io/new/main/data/submissions" +
-    "?filename=" + encodeURIComponent("your-lab-pyrit-shopware-2026-12-01.json") +
+    "?filename=" + encodeURIComponent("your-lab-promptfoo-clawith-2026-12-01.json") +
     "&value=" + encodeURIComponent(SUBMIT_TEMPLATE);
   document.querySelectorAll("a[data-submit]").forEach(a => { a.href = url; });
 }
@@ -770,7 +769,7 @@ function renderStats(d) {
   const chans = new Set();
   d.ranges.forEach(r => (r.channels || []).forEach(c => chans.add(c)));
   document.getElementById("stat-ranges").textContent = d.ranges.length;
-  document.getElementById("stat-goals").textContent = d.ranges.reduce((s, r) => s + r.goals, 0);
+  document.getElementById("stat-goals").textContent = d.ranges.reduce((s, r) => s + r.scenarios.length, 0);
   document.getElementById("stat-surfaces").textContent = d.ranges.reduce((s, r) => s + r.surfaces.length, 0);
   document.getElementById("stat-channels").textContent = chans.size;
 }
@@ -782,8 +781,9 @@ function renderRanges(data) {
     `<tr>
       <td><span class="range-dir">${esc(r.dir)}</span></td>
       <td>${esc(r.upstream)}<span class="victim-sub">${esc(r.domain)}</span></td>
-      <td class="num"><span class="scen-count">${r.goals}</span></td>
+      <td class="num"><span class="scen-count" title="${esc(r.scenarios.map(x => x.id).join("\n"))}">${r.scenarios.length}</span></td>
       <td><span class="surfaces">${r.surfaces.map(s => `<span class="surface">${esc(s)}</span>`).join("")}</span></td>
+      <td><span class="channels">${r.adapters.length ? esc(r.adapters.join(" · ")) : "MCP interface only"}</span></td>
       <td class="hide-sm"><span class="channels">${esc(r.channels.join(", "))}</span></td>
     </tr>`
   ).join("");
@@ -799,6 +799,7 @@ function renderRanges(data) {
       loadJSON("data/ranges.json"),
     ]);
     RESULTS = Array.isArray(results.results) ? results.results : [];
+    if (ranges.benchmark) document.getElementById("bench-version").textContent = `GreyZone ${ranges.benchmark.version}`;
     renderBanner(results);
     document.getElementById("result-count").textContent = RESULTS.length ? `· ${RESULTS.length} campaigns` : "";
     renderResults();

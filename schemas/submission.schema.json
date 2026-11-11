@@ -1,0 +1,263 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:greyzone:leaderboard-submission:2",
+  "title": "GreyZone leaderboard campaign submission",
+  "description": "One attacker configuration run against one range of GreyZone v1.0.0. Each episode is the `evaluation` object of an Oracle result file; only the fields listed here are read, and any other native fields (provenance, success, evidenceFiles, errors, ...) are ignored. Metrics are computed by scripts/merge_submissions.py, which also enforces the rules a schema cannot express: every attack scenario of the range needs a completed episode, a completed episode needs a score on every in-scope surface, normalized must equal points / maxPoints, an official adapter must ship with the range, and episodes may not repeat.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "submissionVersion",
+    "benchmark",
+    "attacker",
+    "victim",
+    "budget",
+    "submittedBy",
+    "date",
+    "artifacts",
+    "episodes"
+  ],
+  "properties": {
+    "submissionVersion": {
+      "const": 2
+    },
+    "benchmark": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version"
+      ],
+      "properties": {
+        "version": {
+          "const": "v1.0.0",
+          "description": "Benchmark release tag the campaign ran."
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,40}$",
+          "description": "Optional commit of that release (prefix of e8f61ec94047e84293820ffb2489d4209f22459f)."
+        }
+      }
+    },
+    "attacker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "framework",
+        "frameworkVersion",
+        "model",
+        "adapter"
+      ],
+      "properties": {
+        "framework": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{0,39}$",
+          "description": "Red-teaming service, e.g. promptfoo, pyrit, deepteam, dreadnode, lakera, or your own tool's name."
+        },
+        "frameworkVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Attacker (generator) model. The Oracle envelope leaves attackerModel null, so this is the record."
+        },
+        "adapter": {
+          "enum": [
+            "official",
+            "custom"
+          ],
+          "description": "official: the adapter shipped under <range>/redteam/<framework>; custom: your own integration with the range's attacker MCP interface."
+        },
+        "settings": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "description": "Strategy, plugins and other settings that define the configuration."
+        }
+      }
+    },
+    "victim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "range"
+      ],
+      "properties": {
+        "range": {
+          "enum": [
+            "shopware-claude-commerce",
+            "kubectl-ai",
+            "smart-home",
+            "Clawith",
+            "Inbox_Zero_Mail_Agent",
+            "Letta_Issue_Agent",
+            "ZerePy",
+            "agent-openai-java-banking-assistant",
+            "alpaca-mcp-server",
+            "commonly"
+          ]
+        },
+        "model": {
+          "type": "string",
+          "description": "Optional; must equal the range's fixed victim model in data/ranges.json."
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxTurns"
+      ],
+      "properties": {
+        "maxTurns": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Attack messages allowed per episode, including the first."
+        }
+      }
+    },
+    "submittedBy": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "artifacts": {
+      "type": "string",
+      "pattern": "^https?://[^/]+",
+      "description": "Public location of the raw result files and the evidence they reference."
+    },
+    "episodes": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Every episode the campaign ran: the `evaluation` object of each Oracle result file (scripts/build_submission.py keeps only the fields below).",
+      "items": {
+        "type": "object",
+        "required": [
+          "schemaVersion",
+          "scorePolicyVersion",
+          "application",
+          "scenarioId",
+          "episodeId",
+          "runId",
+          "closedAt",
+          "status",
+          "surfaces"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "const": 1
+          },
+          "scorePolicyVersion": {
+            "const": "2"
+          },
+          "application": {
+            "type": "string",
+            "description": "Must equal victim.range."
+          },
+          "scenarioId": {
+            "type": "string",
+            "description": "An attack scenario of the range (data/ranges.json), or kubectl-ai's control."
+          },
+          "episodeId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "runId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "closedAt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": [
+              "completed",
+              "no_reply",
+              "error"
+            ]
+          },
+          "surfaces": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "inScope",
+                "score"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "inScope": {
+                  "type": "boolean"
+                },
+                "score": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "points",
+                        "maxPoints",
+                        "normalized"
+                      ],
+                      "properties": {
+                        "points": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "maxPoints": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "normalized": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "if": {
+          "properties": {
+            "status": {
+              "const": "completed"
+            }
+          }
+        },
+        "else": {
+          "properties": {
+            "surfaces": {
+              "items": {
+                "properties": {
+                  "score": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

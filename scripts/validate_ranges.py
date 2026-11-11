@@ -1,51 +1,28 @@
 #!/usr/bin/env python3
-"""Validate data/ranges.json goal counts and fixed victim models against the dataset checkout.
+"""Validate data/ranges.json against a checkout of the benchmark release.
 
-The dataset repository is the single source of truth. This script walks each
-range's benchmark/scenarios/ directory (both layouts: <range>/benchmark/ and
-<range>/sim/benchmark/) and checks the goal count recorded in
-data/ranges.json. Run it before publishing site changes; it exits non-zero on
-any mismatch so it can gate CI.
+The dataset repository is the single source of truth. This script runs the
+dataset's own static scenario audit (scripts/check_scenarios.py) and checks,
+per range, that data/ranges.json records exactly the same attack scenarios,
+their Oracle success surfaces, the benign controls, the shipped red-teaming
+service adapters and the fixed victim model. Run it against a checkout of the
+release named in data/ranges.json before publishing catalog changes; it exits
+non-zero on any mismatch so it can gate CI.
 
 Usage:
     python3 scripts/validate_ranges.py [--dataset /path/to/GreyZone]
 """
 
 import argparse
+import importlib.util
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
-GOAL_DIR_CANDIDATES = ("benchmark/scenarios", "sim/benchmark/scenarios")
-
-
-def count_goals(range_dir: Path) -> int:
-    """Count attack goals for one range.
-
-    Two layouts exist in the dataset:
-      - <range>/benchmark/scenarios/<id>/scenario.json  (dir-per-scenario)
-      - <range>/benchmark/scenarios/<id>.json           (flat, kubectl-ai)
-
-    Calibration entries named `control` (kubectl-ai's false-positive check) are
-    not attack goals and are excluded, matching the paper's 46-scenario count.
-    """
-    for rel in GOAL_DIR_CANDIDATES:
-        scen = range_dir / rel
-        if not scen.is_dir():
-            continue
-        n = 0
-        for entry in sorted(scen.iterdir()):
-            if entry.stem == "control":
-                continue
-            if entry.is_dir():
-                if (entry / "scenario.json").is_file():
-                    n += 1
-            elif entry.suffix == ".json":
-                n += 1
-        return n
-    return -1  # scenarios directory not found
-
+SERVICE_ADAPTERS = {"deepteam", "dreadnode", "lakera", "promptfoo", "pyrit"}
+CONTROL_IDS = {"control"}  # benign calibration scenarios, not attack scenarios
 
 MODEL_CONFIGS = {
     "Clawith": (".env.example", "OPENAI_MODEL"),
@@ -61,44 +38,68 @@ MODEL_CONFIGS = {
 }
 
 
+def dataset_audit(dataset: Path) -> dict:
+    """Run the release's scenario audit; returns {range: {scenario: [surfaces]}}."""
+    spec = importlib.util.spec_from_file_location("check_scenarios", dataset / "scripts" / "check_scenarios.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    report = module.audit(root=dataset)
+    if report["status"] != "PASS":
+        bad = [f"{r['project']}/{r.get('scenario', '-')}: {r.get('detail')}" for r in report["results"] if r["status"] != "PASS"]
+        raise SystemExit("dataset scenario audit failed:\n  " + "\n  ".join(bad))
+    found = {}
+    for row in report["results"]:
+        found.setdefault(row["project"], {})[row["scenario"]] = row["success_surfaces"]
+    return found
+
+
 def main() -> int:
     here = Path(__file__).resolve().parent
     ap = argparse.ArgumentParser()
-    ap.add_argument(
-        "--dataset",
-        type=Path,
-        default=here.parent.parent / "GreyZone",
-        help="path to the dataset checkout (default: sibling of this repo)",
-    )
+    ap.add_argument("--dataset", type=Path, default=here.parent.parent / "GreyZone",
+                    help="path to the dataset checkout (default: sibling of this repo)")
     args = ap.parse_args()
 
-    ranges_path = here.parent / "data" / "ranges.json"
-    ranges = json.loads(ranges_path.read_text())["ranges"]
+    catalog = json.loads((here.parent / "data" / "ranges.json").read_text())
+    benchmark = catalog["benchmark"]
+    found = dataset_audit(args.dataset)
 
-    failures = 0
-    print(f"{'range':40} {'recorded':>8} {'found':>6}  status")
-    for r in ranges:
-        range_dir = args.dataset / r["dir"]
-        if not range_dir.is_dir():
-            print(f"{r['dir']:40} {r['goals']:>8} {'?':>6}  MISSING RANGE DIR")
-            failures += 1
-            continue
-        relative, key = MODEL_CONFIGS[r["dir"]]
-        config = range_dir / relative
+    failures = []
+    print(f"{'range':38} {'scenarios':>9} {'controls':>8} {'adapters':>8}  status")
+    for r in catalog["ranges"]:
+        name, problems = r["dir"], []
+        actual = found.get(name, {})
+        attack = {k: v for k, v in actual.items() if k not in CONTROL_IDS}
+        controls = {k: v for k, v in actual.items() if k in CONTROL_IDS}
+        recorded = {s["id"]: s["surfaces"] for s in r["scenarios"]}
+        if recorded != attack:
+            problems.append(f"scenarios/surfaces differ (dataset: {sorted(attack)})")
+        if {c["id"]: c["surfaces"] for c in r.get("controls", [])} != controls:
+            problems.append("controls differ")
+        if r["surfaces"] != sorted({s for v in attack.values() for s in v}):
+            problems.append("surfaces is not the union of the scenarios' success surfaces")
+        redteam = args.dataset / name / "redteam"
+        shipped = sorted(p.name for p in redteam.iterdir() if p.is_dir() and p.name in SERVICE_ADAPTERS) if redteam.is_dir() else []
+        if r["adapters"] != shipped:
+            problems.append(f"adapters differ (dataset: {shipped or 'none'})")
+        relative, key = MODEL_CONFIGS[name]
+        config = args.dataset / name / relative
         configured = re.search(rf"(?m)^{key}=([^\r\n]+)$", config.read_text()) if config.is_file() else None
-        if not configured or configured[1].strip() != r.get("model"):
-            print(f"{r['dir']:40} MODEL MISMATCH — compare data/ranges.json with {relative}")
-            failures += 1
-        found = count_goals(range_dir)
-        ok = found == r["goals"]
-        if not ok:
-            failures += 1
-        print(f"{r['dir']:40} {r['goals']:>8} {found:>6}  {'ok' if ok else 'MISMATCH'}")
+        if not configured or configured[1].strip() != r["model"]:
+            problems.append(f"victim model differs from {relative}")
+        print(f"{name:38} {len(r['scenarios']):>9} {len(r.get('controls', [])):>8} {len(r['adapters']):>8}  "
+              + ("ok" if not problems else "MISMATCH: " + "; ".join(problems)))
+        failures += problems
 
+    head = subprocess.run(["git", "-C", str(args.dataset), "rev-parse", "HEAD"], capture_output=True, text=True)
+    if head.returncode == 0 and head.stdout.strip() != benchmark["revision"]:
+        print(f"\nnote: the checkout is at {head.stdout.strip()[:12]}, not the {benchmark['version']} "
+              f"release commit {benchmark['revision'][:12]}")
     if failures:
-        print(f"\n{failures} range(s) failed validation — regenerate data/ranges.json")
+        print(f"\n{len(failures)} problem(s) — regenerate data/ranges.json from the {benchmark['version']} release")
         return 1
-    print(f"\nall {len(ranges)} ranges validated")
+    total = sum(len(r["scenarios"]) for r in catalog["ranges"])
+    print(f"\nall {len(catalog['ranges'])} ranges and {total} attack scenarios match the dataset")
     return 0
 
 
