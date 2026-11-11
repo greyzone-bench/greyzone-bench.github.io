@@ -384,6 +384,7 @@
   }
   footer a { color: var(--text-secondary); font-weight: 500; }
   footer a:hover { color: var(--accent); }
+  footer details + details { margin-top: 0.5rem; }
   summary {
     cursor: pointer; font-weight: 500; color: var(--text);
     list-style: none;
@@ -402,11 +403,11 @@
   /* ---------- responsive ---------- */
   @media (max-width: 900px) {
     .hide-sm { display: none; }
+    .cols { grid-template-columns: minmax(0, 1fr); }
     #results-table { min-width: 40rem; }
     #ranges-table { min-width: 44rem; }
   }
   @media (max-width: 700px) {
-    .cols { grid-template-columns: 1fr; }
     .taxonomy-cards { grid-template-columns: 1fr; }
     .paper-layout { grid-template-columns: 1fr; gap: 1.5rem; }
     .overview-figure img { padding: 0.5rem; }
@@ -589,6 +590,13 @@
   primaryClass  = {cs.SE},
   url           = {https://arxiv.org/abs/2611.09161}
 }</pre>
+      </details>
+      <details>
+        <summary>\bibitem</summary>
+        <pre id="bibitem">\bibitem{zhou2026greyzone}
+Ruoyu Zhou, Shuyao Jiang, Haifeng Ruan, and Abhik Roychoudhury.
+\newblock GreyZone: Production-quality Agentic Application Threats.
+\newblock \emph{arXiv preprint arXiv:2611.09161}, 2026.</pre>
       </details>
     </div>
   </div>
