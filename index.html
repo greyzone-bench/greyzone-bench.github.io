@@ -99,7 +99,7 @@
   }
   .header-sub em { font-style: normal; font-weight: 600; color: var(--header-cream); }
   .hero-links { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.25rem; }
-  .hero-links a {
+  .hero-links a, .hero-links button {
     display: inline-flex; align-items: center; gap: 0.4rem;
     padding: 0.45rem 1.1rem;
     border: 1px solid rgba(255, 247, 236, 0.5);
@@ -109,7 +109,8 @@
     font-size: 0.875rem; font-weight: 600;
     transition: background 0.1s ease, border-color 0.1s ease;
   }
-  .hero-links a:hover { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 247, 236, 0.8); color: #fff; }
+  .hero-links a:hover, .hero-links button:hover { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 247, 236, 0.8); color: #fff; }
+  .hero-links button { font-family: inherit; line-height: inherit; cursor: pointer; }
   .stats { display: flex; flex-wrap: wrap; gap: 2.25rem; margin-top: 1.5rem; }
   .stat b {
     display: block;
@@ -437,6 +438,7 @@
       <a href="https://arxiv.org/abs/2611.09161" target="_blank" rel="noopener">Paper</a>
       <a href="https://github.com/Ruoyyy/GreyZone" target="_blank" rel="noopener">GitHub</a>
       <a href="https://github.com/Ruoyyy/GreyZone" target="_blank" rel="noopener">Dataset</a>
+      <button type="button" id="cite-btn" title="Copy BibTeX citation" aria-live="polite">Cite</button>
     </div>
     <div class="stats">
       <div class="stat"><b id="stat-ranges">10</b><span>threat ranges</span></div>
@@ -744,6 +746,24 @@ function renderSubmitLinks() {
     "&value=" + encodeURIComponent(SUBMIT_TEMPLATE);
   document.querySelectorAll("a[data-submit]").forEach(a => { a.href = url; });
 }
+
+/* ---------- cite button: copies the footer BibTeX ---------- */
+let citeReset = 0;
+document.getElementById("cite-btn").addEventListener("click", async ev => {
+  const btn = ev.currentTarget;
+  const bibtex = document.getElementById("bibtex");
+  try {
+    await navigator.clipboard.writeText(bibtex.textContent);
+    btn.textContent = "Copied ✓";
+    clearTimeout(citeReset);
+    citeReset = setTimeout(() => { btn.textContent = "Cite"; }, 1600);
+  } catch {
+    // Clipboard unavailable (blocked or insecure context): show the entry instead.
+    const box = bibtex.closest("details");
+    box.open = true;
+    box.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+});
 
 /* ---------- header stats (derived from ranges.json at boot) ---------- */
 function renderStats(d) {
