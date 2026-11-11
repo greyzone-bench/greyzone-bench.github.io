@@ -191,7 +191,7 @@
   button.paper-preview:focus-visible { outline: 2px solid var(--blue-400); outline-offset: 4px; border-radius: var(--radius-lg); }
   .cite-tile {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem;
-    width: 200px; max-width: 100%; aspect-ratio: 16 / 9;
+    width: 200px; max-width: 100%; aspect-ratio: 5 / 2;
     border-radius: var(--radius-lg);
     background: linear-gradient(135deg, var(--header-blue), var(--blue-700));
     color: #fff;
@@ -199,8 +199,8 @@
     transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
   button.paper-preview:hover .cite-tile { transform: translateY(-2px); box-shadow: var(--card-shadow-hover); }
-  .cite-tile svg { width: 44px; height: 44px; fill: currentColor; }
-  .cite-tile small { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.9; }
+  .cite-tile svg { width: 32px; height: 32px; fill: currentColor; }
+  .cite-tile small { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.9; }
   .video-duration {
     position: absolute; right: 6px; bottom: 6px;
     padding: 0 0.35rem; border-radius: 4px;
@@ -485,6 +485,13 @@
           <img src="assets/paper-first-page.png" alt="First page of the GreyZone paper" width="1080" height="1600">
           <span>Read the paper on arXiv</span>
         </a>
+        <button type="button" class="paper-preview" id="cite-card" title="Copy the BibTeX citation">
+          <span class="cite-tile" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/></svg>
+            <small>BibTeX</small>
+          </span>
+          <span class="cite-label" aria-live="polite">Cite this paper</span>
+        </button>
         <a class="paper-preview" href="assets/greyzone-voiceover.mp4" target="_blank" rel="noopener">
           <span class="video-thumb">
             <img src="assets/greyzone-video-thumb.jpg" alt="Title slide of the GreyZone video" width="640" height="360">
@@ -493,13 +500,6 @@
           </span>
           <span>Watch the video</span>
         </a>
-        <button type="button" class="paper-preview" id="cite-card" title="Copy the BibTeX citation">
-          <span class="cite-tile" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/></svg>
-            <small>BibTeX</small>
-          </span>
-          <span class="cite-label" aria-live="polite">Cite this paper</span>
-        </button>
       </div>
       <div class="overview">
         <h3>Overview</h3>
