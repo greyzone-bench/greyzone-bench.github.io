@@ -183,6 +183,24 @@
   .video-thumb .play circle { fill: rgba(17, 24, 39, 0.72); transition: fill 0.1s ease; }
   .video-thumb .play path { fill: #fff; }
   .paper-preview:hover .play circle { fill: var(--accent); }
+  button.paper-preview {
+    padding: 0; border: 0; background: none; cursor: pointer;
+    font: inherit; font-weight: 600; color: var(--accent);
+  }
+  button.paper-preview:hover { color: var(--blue-700); }
+  button.paper-preview:focus-visible { outline: 2px solid var(--blue-400); outline-offset: 4px; border-radius: var(--radius-lg); }
+  .cite-tile {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem;
+    width: 200px; max-width: 100%; aspect-ratio: 16 / 9;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, var(--header-blue), var(--blue-700));
+    color: #fff;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  button.paper-preview:hover .cite-tile { transform: translateY(-2px); box-shadow: var(--card-shadow-hover); }
+  .cite-tile svg { width: 44px; height: 44px; fill: currentColor; }
+  .cite-tile small { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.9; }
   .video-duration {
     position: absolute; right: 6px; bottom: 6px;
     padding: 0 0.35rem; border-radius: 4px;
@@ -475,6 +493,13 @@
           </span>
           <span>Watch the video</span>
         </a>
+        <button type="button" class="paper-preview" id="cite-card" title="Copy the BibTeX citation">
+          <span class="cite-tile" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/></svg>
+            <small>BibTeX</small>
+          </span>
+          <span class="cite-label" aria-live="polite">Cite this paper</span>
+        </button>
       </div>
       <div class="overview">
         <h3>Overview</h3>
@@ -765,23 +790,25 @@ function renderSubmitLinks() {
   document.querySelectorAll("a[data-submit]").forEach(a => { a.href = url; });
 }
 
-/* ---------- cite button: copies the footer BibTeX ---------- */
-let citeReset = 0;
-document.getElementById("cite-btn").addEventListener("click", async ev => {
-  const btn = ev.currentTarget;
+/* ---------- cite buttons: copy the footer BibTeX ---------- */
+async function copyCitation(label, idle, done) {
   const bibtex = document.getElementById("bibtex");
   try {
     await navigator.clipboard.writeText(bibtex.textContent);
-    btn.textContent = "Copied ✓";
-    clearTimeout(citeReset);
-    citeReset = setTimeout(() => { btn.textContent = "Cite"; }, 1600);
+    label.textContent = done;
+    clearTimeout(label.resetTimer);
+    label.resetTimer = setTimeout(() => { label.textContent = idle; }, 1600);
   } catch {
     // Clipboard unavailable (blocked or insecure context): show the entry instead.
     const box = bibtex.closest("details");
     box.open = true;
     box.scrollIntoView({ behavior: "smooth", block: "center" });
   }
-});
+}
+const citeButton = document.getElementById("cite-btn");
+citeButton.addEventListener("click", () => copyCitation(citeButton, "Cite", "Copied ✓"));
+const citeCardLabel = document.querySelector("#cite-card .cite-label");
+document.getElementById("cite-card").addEventListener("click", () => copyCitation(citeCardLabel, "Cite this paper", "BibTeX copied ✓"));
 
 /* ---------- header stats (derived from ranges.json at boot) ---------- */
 function renderStats(d) {
