@@ -212,25 +212,22 @@
     font-size: 0.8125rem; color: var(--text-muted);
   }
 
-  /* ---------- tabs (underline style) ---------- */
-  .tabs {
-    display: flex; gap: 1.5px;
-    border-bottom: 1.5px solid var(--border);
+  /* ---------- range filter ---------- */
+  .range-filter {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-size: 0.875rem; font-weight: 500; color: var(--text-secondary);
   }
-  .tabs button {
-    padding: 0.6rem 0.9rem;
-    background: none; border: none; cursor: pointer;
-    font: inherit; font-size: 0.875rem; font-weight: 500;
-    color: var(--text-secondary);
-    position: relative;
-    transition: color 0.1s ease;
+  .range-filter select {
+    max-width: 100%;
+    padding: 0.45rem 2rem 0.45rem 0.75rem;
+    border: 1px solid var(--border); border-radius: var(--radius-md);
+    background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 0.7rem center / 10px;
+    appearance: none; cursor: pointer;
+    font: inherit; font-size: 0.875rem; color: var(--text);
+    transition: border-color 0.1s ease;
   }
-  .tabs button:hover { color: var(--accent); }
-  .tabs button.active { color: var(--accent); }
-  .tabs button.active::after {
-    content: ''; position: absolute; left: 0; right: 0; bottom: -1.5px;
-    height: 2px; background: var(--accent);
-  }
+  .range-filter select:hover { border-color: var(--accent); }
+  .range-filter select:focus-visible { outline: 2px solid var(--blue-100); border-color: var(--accent); }
 
   /* ---------- table cards ---------- */
   .table-card {
@@ -298,6 +295,13 @@
     padding: 2rem 1rem; color: var(--text-muted); text-align: center;
   }
   tr.no-results:hover { background: transparent; }
+  tbody tr.group-row td {
+    padding: 0.55rem 1rem;
+    background: var(--gray-100);
+    font-size: 0.8125rem; color: var(--text-secondary);
+  }
+  tbody tr.group-row:hover { background: transparent; }
+  tr.group-row b { margin-right: 0.6rem; font-size: 0.875rem; font-weight: 600; color: var(--text); }
   .cta { font-weight: 500; }
 
   /* ranges cells */
@@ -499,12 +503,11 @@
     <div class="section-head">
       <div>
         <h2>Results<span class="count" id="result-count"></span></h2>
-        <p class="sub">One row per campaign: one attacker configuration against every scenario of one range on <span id="bench-version">GreyZone v1.0.0</span>. Click a column to sort.</p>
+        <p class="sub">One row per campaign: one attacker configuration against every scenario of one range on <span id="bench-version">GreyZone v1.0.0</span>. Scores are comparable only within a range, so campaigns are ranked per range. Click a column to sort.</p>
       </div>
-      <div class="tabs" id="view-tabs">
-        <button data-view="attacker" class="active">By attacker</button>
-        <button data-view="victim">By victim</button>
-      </div>
+      <label class="range-filter">Range
+        <select id="range-filter"><option value="all">All ranges</option></select>
+      </label>
     </div>
 
     <div class="table-card">
@@ -631,9 +634,6 @@ const M = r => r.metrics;
 const ATTACKER = { key: "attacker.framework", label: "Attacker",
   render: r => `<span class="nowrap" title="${esc([r.attacker.adapter + " adapter", r.attacker.settings].filter(Boolean).join(" · "))}"><span class="framework">${esc(r.attacker.framework)}</span> <span class="model">${esc(r.attacker.frameworkVersion)}</span><br><span class="model">${esc(r.attacker.model)}</span></span>`,
   sort: r => r.attacker.framework };
-const VICTIM = { key: "victim.range", label: "Victim range",
-  render: r => `<span class="framework">${esc(r.victim.range)}</span><br><span class="model">${esc(r.victim.model)}</span>`,
-  sort: r => r.victim.range };
 const METRICS = [
   { key: "score",       label: "Score", num: true, render: r => meter(M(r).score, 3), sort: r => M(r).score },
   { key: "noReply",     label: "No-reply", num: true, render: r => pct(M(r).noReplyRate), sort: r => M(r).noReplyRate, cls: "hide-sm" },
@@ -644,15 +644,14 @@ const METRICS = [
   { key: "date",        label: "Date", render: r => `<span class="nowrap">${esc(r.date)}</span>`, sort: r => r.date, cls: "hide-sm" },
 ];
 const RANK = { key: "rank", label: "#", num: true, render: () => "", sort: null };
-const COLUMNS = {
-  attacker: [RANK, ATTACKER, VICTIM, ...METRICS],
-  victim: [RANK, VICTIM, ATTACKER, ...METRICS],
-};
+const COLUMNS = [RANK, ATTACKER, ...METRICS];
 
-let currentView = "attacker";
+let currentRange = "all";
 let sortKey = "score";
 let sortDir = -1;
 let RESULTS = [];
+let RANGE_ORDER = [];   // range catalog order (data/ranges.json)
+let VICTIM_MODEL = {};
 
 function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function pct(x) { return (x == null) ? "—" : (100 * x).toFixed(0) + "%"; }
@@ -663,35 +662,51 @@ function meter(x, digits) {
          `<span class="meter-track"><span class="meter-fill" style="width:${(100 * v).toFixed(1)}%"></span></span></span>`;
 }
 
+function compareBy(col) {
+  return (a, b) => {
+    const va = col.sort(a), vb = col.sort(b);
+    if (va == null || vb == null) return (va == null) - (vb == null);   // missing values last
+    if (typeof va === "number" && typeof vb === "number") return (va - vb) * sortDir;
+    return String(va).localeCompare(String(vb)) * sortDir;
+  };
+}
+
+// One range: a header row, then its campaigns ranked among themselves.
+function rangeGroup(name, rows) {
+  const n = COLUMNS.length;
+  const head = `<tr class="group-row"><td colspan="${n}"><b>${esc(name)}</b>victim ${esc(VICTIM_MODEL[name] || "")} · ${rows.length} campaign${rows.length === 1 ? "" : "s"}</td></tr>`;
+  if (!rows.length) {
+    return head + `<tr class="no-results"><td colspan="${n}">No campaigns on ${esc(name)} yet. <a class="cta" href="#submit">Submit one</a></td></tr>`;
+  }
+  const col = COLUMNS.find(c => c.key === sortKey);
+  return head + [...rows].sort(compareBy(col)).map((r, i) =>
+    "<tr>" + COLUMNS.map(c => {
+      const content = (c.key === "rank") ? `<span class="rank">${i + 1}</span>` : c.render(r);
+      return `<td class="${c.num ? "num " : ""}${c.cls || ""}">${content}</td>`;
+    }).join("") + "</tr>"
+  ).join("");
+}
+
 function renderResults() {
-  const cols = COLUMNS[currentView];
   const head = document.getElementById("results-head");
-  head.innerHTML = cols.map(c =>
+  head.innerHTML = COLUMNS.map(c =>
     `<th class="${c.num ? "num " : ""}${c.cls || ""}${c.sort ? " sortable" : " no-sort"}" ${c.sort ? `data-key="${c.key}"` : ""}>` +
     esc(c.label) +
     (c.key === sortKey ? `<span class="arrow">${sortDir < 0 ? "▾" : "▴"}</span>` : "") +
     `</th>`
   ).join("");
 
+  const shown = currentRange === "all" ? RESULTS : RESULTS.filter(r => r.victim.range === currentRange);
+  document.getElementById("result-count").textContent =
+    shown.length ? `· ${shown.length} campaign${shown.length === 1 ? "" : "s"}` : "";
   const body = document.getElementById("results-body");
   if (!RESULTS.length) {
-    const n = cols.length;
-    body.innerHTML = `<tr class="no-results"><td colspan="${n}">No results yet — the first evaluation campaigns are running.<br><br><a class="cta" href="#submit">Submit results via pull request</a></td></tr>`;
-    return;
+    body.innerHTML = `<tr class="no-results"><td colspan="${COLUMNS.length}">No results yet — the first evaluation campaigns are running.<br><br><a class="cta" href="#submit">Submit results via pull request</a></td></tr>`;
+  } else {
+    const names = currentRange !== "all" ? [currentRange]
+      : [...new Set([...RANGE_ORDER, ...RESULTS.map(r => r.victim.range)])].filter(name => RESULTS.some(r => r.victim.range === name));
+    body.innerHTML = names.map(name => rangeGroup(name, shown.filter(r => r.victim.range === name))).join("");
   }
-  const sorted = [...RESULTS].sort((a, b) => {
-    const ca = cols.find(c => c.key === sortKey), cb = ca;
-    const va = ca.sort(a), vb = cb.sort(b);
-    if (va == null || vb == null) return (va == null) - (vb == null);
-    if (typeof va === "number" && typeof vb === "number") return (va - vb) * sortDir;
-    return String(va).localeCompare(String(vb)) * sortDir;
-  });
-  body.innerHTML = sorted.map((r, i) =>
-    "<tr>" + cols.map(c => {
-      const content = (c.key === "rank") ? `<span class="rank">${i + 1}</span>` : c.render(r);
-      return `<td class="${c.num ? "num " : ""}${c.cls || ""}">${content}</td>`;
-    }).join("") + "</tr>"
-  ).join("");
 
   head.querySelectorAll("th[data-key]").forEach(th => th.addEventListener("click", () => {
     const k = th.dataset.key;
@@ -700,12 +715,16 @@ function renderResults() {
   }));
 }
 
-document.getElementById("view-tabs").addEventListener("click", ev => {
-  const btn = ev.target.closest("button[data-view]");
-  if (!btn) return;
-  currentView = btn.dataset.view;
-  sortKey = "score"; sortDir = -1;
-  document.querySelectorAll("#view-tabs button").forEach(b => b.classList.toggle("active", b === btn));
+function renderRangeFilter() {
+  const count = name => RESULTS.filter(r => r.victim.range === name).length;
+  const select = document.getElementById("range-filter");
+  select.innerHTML = `<option value="all">All ranges (${RESULTS.length})</option>` +
+    RANGE_ORDER.map(name => `<option value="${esc(name)}">${esc(name)} (${count(name)})</option>`).join("");
+  select.value = currentRange;
+}
+
+document.getElementById("range-filter").addEventListener("change", ev => {
+  currentRange = ev.target.value;
   renderResults();
 });
 
@@ -800,8 +819,10 @@ function renderRanges(data) {
     ]);
     RESULTS = Array.isArray(results.results) ? results.results : [];
     if (ranges.benchmark) document.getElementById("bench-version").textContent = `GreyZone ${ranges.benchmark.version}`;
+    RANGE_ORDER = ranges.ranges.map(r => r.dir);
+    VICTIM_MODEL = Object.fromEntries(ranges.ranges.map(r => [r.dir, r.model]));
     renderBanner(results);
-    document.getElementById("result-count").textContent = RESULTS.length ? `· ${RESULTS.length} campaigns` : "";
+    renderRangeFilter();
     renderResults();
     renderRanges(ranges);
     renderStats(ranges);

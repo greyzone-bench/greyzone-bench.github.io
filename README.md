@@ -128,5 +128,7 @@ kubectl-ai's `control` episodes count only toward Control FP):
   episodes (0 is healthy); `null` for ranges without a control or campaigns
   without control episodes
 
-The table offers two views — **By attacker** (default) and **By victim** —
-over the same rows, so no schema change is needed to flip the narrative.
+Scores are comparable only within a range (scenario sets and difficulty
+differ), so the table ranks campaigns per range: the range selector shows one
+range, and **All ranges** groups campaigns by range in catalog order, with a
+separate ranking in each group.
