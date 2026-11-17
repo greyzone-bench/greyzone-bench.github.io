@@ -5,18 +5,22 @@ data/paper.json records the arXiv id and the version the thumbnail was
 rendered from. The script asks the arXiv API for the latest version and only
 when it is newer (or the thumbnail is missing, or --force) downloads that
 version's PDF and renders page 1 with pdftoppm (poppler-utils). Runs daily in
-CI (.github/workflows/paper-thumbnail.yml); safe to run locally.
+CI (.github/workflows/paper-thumbnail.yml); safe to run locally. arXiv
+requests are retried, since the API occasionally stalls or answers 429/5xx.
 
 Usage:
     python3 scripts/update_paper_thumbnail.py [--force]
 """
 
 import argparse
+import http.client
 import json
 import re
 import subprocess
 import sys
 import tempfile
+import time
+import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -27,12 +31,30 @@ THUMB_PATH = ROOT / "assets" / "paper-first-page.png"
 THUMB_WIDTH = 1080
 ATOM = "{http://www.w3.org/2005/Atom}"
 USER_AGENT = "greyzone-bench.github.io paper-thumbnail sync"
+ATTEMPTS = 3          # per request
+TIMEOUT = 30          # seconds per attempt
+RETRY_DELAY = 20      # seconds, multiplied by the attempt number
+RETRY_STATUS = {429, 500, 502, 503, 504}
 
 
 def fetch(url: str) -> bytes:
+    """GET url, retrying stalls, dropped connections and 429/5xx answers."""
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=60) as res:
-        return res.read()
+    for attempt in range(1, ATTEMPTS + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as res:
+                return res.read()
+        except urllib.error.HTTPError as error:
+            if error.code not in RETRY_STATUS or attempt == ATTEMPTS:
+                raise
+            reason = f"HTTP {error.code}"
+        except (OSError, http.client.HTTPException) as error:  # timeouts, resets, URLError
+            if attempt == ATTEMPTS:
+                raise
+            reason = f"{type(error).__name__}: {error}"
+        wait = RETRY_DELAY * attempt
+        print(f"  {url}: {reason}; retrying in {wait}s (attempt {attempt}/{ATTEMPTS})", flush=True)
+        time.sleep(wait)
 
 
 def latest_version(arxiv_id: str) -> int:
