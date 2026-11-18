@@ -73,7 +73,7 @@ attack scenario with its Oracle success surfaces, kubectl-ai's benign
 Validate it against a checkout of that release:
 
 ```bash
-python3 scripts/validate_ranges.py --dataset /path/to/GreyZone   # at tag v1.0.0
+python3 scripts/validate_ranges.py --dataset /path/to/GreyZone   # at tag v1.0.1
 ```
 
 The script runs the dataset's own static audit (`scripts/check_scenarios.py`)

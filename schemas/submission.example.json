@@ -1,8 +1,8 @@
 {
   "submissionVersion": 2,
   "benchmark": {
-    "version": "v1.0.0",
-    "revision": "e8f61ec9"
+    "version": "v1.0.1",
+    "revision": "bcc42f13"
   },
   "attacker": {
     "framework": "promptfoo",

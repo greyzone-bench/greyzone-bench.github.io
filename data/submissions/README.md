@@ -1,7 +1,7 @@
 # Submit an evaluation campaign
 
 A **campaign** is one attacker configuration run against **every attack
-scenario of one range** of [GreyZone v1.0.0](https://github.com/Ruoyyy/GreyZone/releases/tag/v1.0.0).
+scenario of one range** of [GreyZone v1.0.1](https://github.com/Ruoyyy/GreyZone/releases/tag/v1.0.1).
 Each campaign is one JSON file in this directory, added by pull request. Per
 episode, the file carries the `evaluation` object of the Oracle's native
 result JSON, reduced to the fields scoring needs. The leaderboard ranks
@@ -17,7 +17,7 @@ reference). A complete example:
 
 ## 1. Run the campaign
 
-- Use the **v1.0.0** release with the range's **fixed victim model** — eight
+- Use the **v1.0.1** release with the range's **fixed victim model** — eight
   ranges use `gpt-4.1-mini-2025-04-14`; Alpaca and Shopware use
   `claude-haiku-4-5-20251001`. A different victim model or release is a
   different experiment and is not accepted; maintainers check the victim
@@ -28,8 +28,8 @@ reference). A complete example:
   use the same configuration and budget for all of them. On kubectl-ai, also
   run the benign `control` scenario so the campaign reports Control FP.
 - Drive the attacks through the range's attacker interface. Four ranges ship
-  official adapters (`adapters` in the catalog: Promptfoo, PyRIT, DeepTeam,
-  Dreadnode, and Lakera on Letta); elsewhere, or with your own tool, connect
+  official adapters (`adapters` in the catalog: Promptfoo, PyRIT, DeepTeam
+  and Dreadnode); elsewhere, or with your own tool, connect
   to the attacker MCP interface yourself and declare `"adapter": "custom"`.
 - Keep the interaction budget fixed across the campaign and report it as
   `budget.maxTurns` (attack messages per episode, including the first).
@@ -80,8 +80,8 @@ hyphens. Edit the same file to correct a campaign; delete it to withdraw it.
 | Field | Meaning |
 | --- | --- |
 | `submissionVersion` | `2` |
-| `benchmark.version` | `"v1.0.0"`; optional `revision` must be a prefix of the release commit |
-| `attacker.framework` | Service name, lowercase (`promptfoo`, `pyrit`, `deepteam`, `dreadnode`, `lakera`, or your tool) |
+| `benchmark.version` | `"v1.0.1"`; optional `revision` must be a prefix of the release commit |
+| `attacker.framework` | Service name, lowercase (`promptfoo`, `pyrit`, `deepteam`, `dreadnode`, or your tool) |
 | `attacker.frameworkVersion` | Exact service version |
 | `attacker.model` | Attacker (generator) model; the Oracle does not record it |
 | `attacker.adapter` | `official` (shipped under `<range>/redteam/<framework>`) or `custom` |
@@ -96,7 +96,7 @@ accepted; its other fields are ignored):
 
 | Episode field | Use |
 | --- | --- |
-| `schemaVersion`, `scorePolicyVersion` | Must be `1` and `"2"` (the v1.0.0 contract) |
+| `schemaVersion`, `scorePolicyVersion` | Must be `1` and `"2"` (the v1.0.1 contract) |
 | `application` | Must equal `victim.range` |
 | `scenarioId` | A scenario of the range (or kubectl-ai's `control`); groups the score |
 | `episodeId`, `runId`, `closedAt` | Identify the episode in the artifacts; one episode may not appear twice |
@@ -113,7 +113,7 @@ repository for you). With git: fork, add the file on a branch and
 [open a pull request](https://github.com/greyzone-bench/greyzone-bench.github.io/compare).
 Fill in the pull request template.
 
-CI rejects a campaign when an episode lacks a field above, is not a v1.0.0
+CI rejects a campaign when an episode lacks a field above, is not a v1.0.1
 envelope (`schemaVersion` 1, `scorePolicyVersion` "2"), belongs to another
 range or an unknown scenario, is unscoped, repeats another episode, or has
 inconsistent scores (a completed episode without a score on an in-scope

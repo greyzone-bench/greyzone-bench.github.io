@@ -1,8 +1,8 @@
 {
   "schemaVersion": 3,
   "benchmark": {
-    "version": "v1.0.0",
-    "revision": "e8f61ec94047e84293820ffb2489d4209f22459f",
+    "version": "v1.0.1",
+    "revision": "bcc42f1391115d5060e41e54c402aba1c9b80685",
     "evaluationSchemaVersion": 1,
     "scorePolicyVersion": "2"
   },
@@ -318,7 +318,6 @@
       "adapters": [
         "deepteam",
         "dreadnode",
-        "lakera",
         "promptfoo",
         "pyrit"
       ],

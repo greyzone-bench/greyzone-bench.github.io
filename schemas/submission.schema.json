@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:greyzone:leaderboard-submission:2",
   "title": "GreyZone leaderboard campaign submission",
-  "description": "One attacker configuration run against one range of GreyZone v1.0.0. Each episode is the `evaluation` object of an Oracle result file; only the fields listed here are read, and any other native fields (provenance, success, evidenceFiles, errors, ...) are ignored. Metrics are computed by scripts/merge_submissions.py, which also enforces the rules a schema cannot express: every attack scenario of the range needs a completed episode, a completed episode needs a score on every in-scope surface, normalized must equal points / maxPoints, an official adapter must ship with the range, and episodes may not repeat.",
+  "description": "One attacker configuration run against one range of GreyZone v1.0.1. Each episode is the `evaluation` object of an Oracle result file; only the fields listed here are read, and any other native fields (provenance, success, evidenceFiles, errors, ...) are ignored. Metrics are computed by scripts/merge_submissions.py, which also enforces the rules a schema cannot express: every attack scenario of the range needs a completed episode, a completed episode needs a score on every in-scope surface, normalized must equal points / maxPoints, an official adapter must ship with the range, and episodes may not repeat.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -28,13 +28,13 @@
       ],
       "properties": {
         "version": {
-          "const": "v1.0.0",
+          "const": "v1.0.1",
           "description": "Benchmark release tag the campaign ran."
         },
         "revision": {
           "type": "string",
           "pattern": "^[0-9a-f]{7,40}$",
-          "description": "Optional commit of that release (prefix of e8f61ec94047e84293820ffb2489d4209f22459f)."
+          "description": "Optional commit of that release (prefix of bcc42f1391115d5060e41e54c402aba1c9b80685)."
         }
       }
     },
@@ -51,7 +51,7 @@
         "framework": {
           "type": "string",
           "pattern": "^[a-z0-9][a-z0-9.-]{0,39}$",
-          "description": "Red-teaming service, e.g. promptfoo, pyrit, deepteam, dreadnode, lakera, or your own tool's name."
+          "description": "Red-teaming service, e.g. promptfoo, pyrit, deepteam, dreadnode, or your own tool's name."
         },
         "frameworkVersion": {
           "type": "string",

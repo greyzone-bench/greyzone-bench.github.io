@@ -528,7 +528,7 @@
     <div class="section-head">
       <div>
         <h2>Results<span class="count" id="result-count"></span></h2>
-        <p class="sub">One row per campaign: one attacker configuration against every scenario of one range on <span id="bench-version">GreyZone v1.0.0</span>. Scores are comparable only within a range, so campaigns are ranked per range. Click a column to sort.</p>
+        <p class="sub">One row per campaign: one attacker configuration against every scenario of one range on <span id="bench-version">GreyZone v1.0.1</span>. Scores are comparable only within a range, so campaigns are ranked per range. Click a column to sort.</p>
       </div>
       <label class="range-filter">Range
         <select id="range-filter"><option value="all">All ranges</option></select>
@@ -589,7 +589,7 @@
       </div>
     </div>
     <ol class="steps">
-      <li>Run <b>every attack scenario</b> of one range from <a href="https://github.com/Ruoyyy/GreyZone/releases/latest" target="_blank" rel="noopener">GreyZone v1.0.0</a> with its fixed victim model (on kubectl-ai, also the benign <code>control</code>). Keep every Oracle result file, including <code>no_reply</code> and <code>error</code> episodes, and publish them with their evidence.</li>
+      <li>Run <b>every attack scenario</b> of one range from <a id="bench-release" href="https://github.com/Ruoyyy/GreyZone/releases/tag/v1.0.1" target="_blank" rel="noopener">GreyZone v1.0.1</a> with its fixed victim model (on kubectl-ai, also the benign <code>control</code>). Keep every Oracle result file, including <code>no_reply</code> and <code>error</code> episodes, and publish them with their evidence.</li>
       <li>Build the campaign file: <code>python3 scripts/build_submission.py --range … --results … --out data/submissions/&lt;campaign-id&gt;.json</code>. It reads each result file's native <code>evaluation</code>, keeps only the fields scoring needs (dropping <code>provenance</code>, <code>success</code>, evidence lists and the like), validates the campaign exactly as CI does and prints the score the leaderboard will show.</li>
       <li>Click <b>Create submission</b>, paste the generated file over the template and keep its file name, then <b>Commit changes…</b> → <b>Propose changes</b> → <b>Create pull request</b>. GitHub forks the repository for you; fill in the pull request template.</li>
     </ol>
@@ -773,7 +773,7 @@ function renderTaxonomy() {
 /* ---------- submission link (GitHub's web editor with a prefilled campaign file) ---------- */
 const SUBMIT_TEMPLATE = `{
   "submissionVersion": 2,
-  "benchmark": { "version": "v1.0.0" },
+  "benchmark": { "version": "v1.0.1" },
   "attacker": { "framework": "promptfoo", "frameworkVersion": "0.122.2", "model": "your-attacker-model", "adapter": "official", "settings": "strategy and plugins" },
   "victim": { "range": "Clawith" },
   "budget": { "maxTurns": 5 },
@@ -845,7 +845,12 @@ function renderRanges(data) {
       loadJSON("data/ranges.json"),
     ]);
     RESULTS = Array.isArray(results.results) ? results.results : [];
-    if (ranges.benchmark) document.getElementById("bench-version").textContent = `GreyZone ${ranges.benchmark.version}`;
+    if (ranges.benchmark) {
+      const v = ranges.benchmark.version, link = document.getElementById("bench-release");
+      document.getElementById("bench-version").textContent = `GreyZone ${v}`;
+      link.textContent = `GreyZone ${v}`;
+      link.href = `https://github.com/Ruoyyy/GreyZone/releases/tag/${v}`;
+    }
     RANGE_ORDER = ranges.ranges.map(r => r.dir);
     VICTIM_MODEL = Object.fromEntries(ranges.ranges.map(r => [r.dir, r.model]));
     renderBanner(results);

@@ -36,7 +36,7 @@ def campaign(victim_range="Clawith", adapter="custom"):
     scenarios = submissions.RANGES[victim_range]["scenarios"]
     return {
         "submissionVersion": 2,
-        "benchmark": {"version": "v1.0.0"},
+        "benchmark": {"version": submissions.BENCHMARK["version"]},
         "attacker": {"framework": "pyrit", "frameworkVersion": "0.9.0", "model": "fixture-attacker", "adapter": adapter},
         "victim": {"range": victim_range},
         "budget": {"maxTurns": 5},
@@ -154,13 +154,13 @@ class SubmissionTests(unittest.TestCase):
         self.assertEqual(submissions.campaign_row("c", stripped), submissions.campaign_row("c", doc))
 
     def test_benchmark_release_is_pinned(self):
-        for benchmark in ({"version": "v1.1.0"}, {"version": "v1.0.0", "revision": "0000000"}, {}):
+        for benchmark in ({"version": "v0.9.0"}, {"version": submissions.BENCHMARK["version"], "revision": "0000000"}, {}):
             with self.subTest(benchmark=benchmark):
                 doc = campaign()
                 doc["benchmark"] = benchmark
                 self.assert_rejected(doc)
         doc = campaign()
-        doc["benchmark"]["revision"] = "e8f61ec9"
+        doc["benchmark"]["revision"] = submissions.BENCHMARK["revision"][:8]
         submissions.validate("c", doc)
 
     def test_envelope_consistency_rules(self):
