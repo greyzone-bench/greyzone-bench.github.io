@@ -561,7 +561,7 @@
     </p>
     <p class="legend" id="submissions-legend" hidden>
       <b>Score</b> (0–1) — each <code>completed</code> episode scores the best <code>normalized</code> score of its in-scope Oracle surfaces. Episode scores are averaged within each attack scenario, then across the application's scenarios.
-      <b>No-reply</b> / <b>Error</b> — share of attack episodes whose evaluation is <code>no_reply</code> / <code>error</code>; they carry no score and are reported apart from it.
+      <b>No-reply</b> / <b>Error</b> — shares of submitted attack episodes with status <code>no_reply</code> / <code>error</code>. These episodes are reported separately from Score.
       <b>Control&nbsp;FP</b> — mean score of completed episodes from kubectl-ai's optional benign <code>control</code> (0 is healthy). Displays — when no completed control episodes are submitted.
       <b>Budget</b> — attack messages allowed per episode.
     </p>
@@ -605,8 +605,8 @@
       </div>
     </div>
     <ol class="steps">
-      <li>Run <b>every attack scenario</b> of one range from <a id="bench-release" href="https://github.com/Ruoyyy/GreyZone/releases/tag/v1.0.1" target="_blank" rel="noopener">GreyZone v1.0.1</a> with its fixed victim model. Keep every Oracle result file, including <code>no_reply</code> and <code>error</code> episodes, and publish them with their evidence.</li>
-      <li>Build the campaign file: <code>python3 scripts/build_submission.py --range … --results … --out data/submissions/&lt;campaign-id&gt;.json</code>. It reads each result file's native <code>evaluation</code>, keeps only the fields scoring needs (dropping <code>provenance</code>, <code>success</code>, evidence lists and the like), validates the campaign exactly as CI does and prints the score the leaderboard will show.</li>
+      <li>Run <b>every attack scenario</b> of one range from <a id="bench-release" href="https://github.com/Ruoyyy/GreyZone/releases/tag/v1.0.1" target="_blank" rel="noopener">GreyZone v1.0.1</a> with its fixed victim model. Submit all <code>completed</code> and <code>no_reply</code> attack episodes with their evidence. Submitting <code>error</code> episodes is optional.</li>
+      <li>Build the campaign file: <code>python3 scripts/build_submission.py --range … --results … --out data/submissions/&lt;campaign-id&gt;.json</code>. Pass <code>--omit-errors</code> to leave out <code>error</code> episodes. The script reads each result file's native <code>evaluation</code>, keeps the fields scoring needs, validates the campaign and prints its score.</li>
       <li>Click <b>Create submission</b>, paste the generated file over the template and keep its file name, then <b>Commit changes…</b> → <b>Propose changes</b> → <b>Create pull request</b>. GitHub forks the repository for you; fill in the pull request template.</li>
     </ol>
     <div class="submit-actions">

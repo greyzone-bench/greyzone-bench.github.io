@@ -6,7 +6,7 @@
 - Attacker service, version, model and adapter:
 - Attack settings (strategy, plugins) and `budget.maxTurns`:
 - Raw Oracle result files and evidence:
-- All episodes run are included, including `no_reply` and `error`: yes / no
+- All `completed` and `no_reply` attack episodes are included: yes / no
 
 Build the file with `scripts/build_submission.py`; the leaderboard computes
 every metric from the episode envelopes. Use the range's fixed victim model.

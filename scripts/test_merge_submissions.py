@@ -244,6 +244,36 @@ class BuildSubmissionTests(unittest.TestCase):
         self.assertTrue(all(tuple(e) == submissions.EPISODE_FIELDS for e in found))  # stripped
         self.assertEqual(out.getvalue().count("skip"), 3)
 
+    def test_builder_can_omit_errors_and_keeps_no_reply(self):
+        import build_submission
+
+        doc = campaign("kubectl-ai")
+        scenario = doc["episodes"][0]["scenarioId"]
+        doc["episodes"].extend([
+            episode("kubectl-ai", scenario, 20, status="no_reply"),
+            episode("kubectl-ai", scenario, 21, status="error"),
+        ])
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            raw = root / "raw"
+            raw.mkdir()
+            for i, evaluation in enumerate(doc["episodes"], 1):
+                (raw / f"result-{i}.json").write_text(json.dumps({"evaluation": evaluation}))
+            output = root / "campaign.json"
+            args = ["build_submission.py", "--range", "kubectl-ai", "--results", str(raw),
+                    "--framework", "pyrit", "--framework-version", "0.9.0", "--adapter", "custom",
+                    "--attacker-model", "fixture-attacker", "--max-turns", "5",
+                    "--submitted-by", "fixture-lab", "--artifacts", "https://example.org/fixture-logs",
+                    "--out", str(output)]
+            for extra_args, expected_errors in [([], 1), (["--omit-errors"], 0)]:
+                with self.subTest(extra_args=extra_args):
+                    with patch("sys.argv", args + extra_args), redirect_stdout(io.StringIO()):
+                        self.assertEqual(build_submission.main(), 0)
+                    statuses = [e["status"] for e in json.loads(output.read_text())["episodes"]]
+                    self.assertEqual(statuses.count("completed"), len(doc["episodes"]) - 2)
+                    self.assertEqual(statuses.count("no_reply"), 1)
+                    self.assertEqual(statuses.count("error"), expected_errors)
+
 
 class ContractTests(unittest.TestCase):
     """The stdlib validator must stay in step with the vendored JSON Schemas."""

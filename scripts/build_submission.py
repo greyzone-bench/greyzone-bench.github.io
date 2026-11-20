@@ -5,7 +5,8 @@ Reads every result file under the given paths (files, or directories searched
 recursively for result*.json), takes its native `evaluation` object and keeps
 only the fields scoring needs (provenance, evidence lists and the like are
 dropped). Files that are not benchmark results (no envelope, or unscoped
-diagnostics) and repeated copies of one episode are skipped. The campaign is
+diagnostics) and repeated copies of one episode are skipped. Pass
+`--omit-errors` to leave out episodes with status `error`. The campaign is
 then validated exactly as CI does, its leaderboard row printed and the
 campaign file written.
 Result locations per range are listed in data/ranges.json (`resultPath`).
@@ -28,7 +29,7 @@ from pathlib import Path
 import merge_submissions as board
 
 
-def envelopes(paths):
+def envelopes(paths, *, omit_errors=False):
     files = []
     for path in map(Path, paths):
         files += sorted(path.rglob("result*.json")) if path.is_dir() else [path]
@@ -42,8 +43,12 @@ def envelopes(paths):
         if not isinstance(episode, dict):
             print(f"  skip {path}: no evaluation envelope (pre-contract result)")
             continue
-        if episode.get("status") == "unscoped":
+        status = episode.get("status")
+        if status == "unscoped":
             print(f"  skip {path}: unscoped diagnostics")
+            continue
+        if omit_errors and status == "error":
+            print(f"  skip {path}: error episode omitted by --omit-errors")
             continue
         key = (episode.get("runId"), episode.get("episodeId"), episode.get("closedAt"))
         if key in seen:
@@ -58,6 +63,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--range", required=True, choices=sorted(board.RANGES), help="victim range directory")
     ap.add_argument("--results", required=True, nargs="+", help="result files or directories")
+    ap.add_argument("--omit-errors", action="store_true", help="omit episodes with status error")
     ap.add_argument("--framework", required=True, help="red-teaming service, e.g. promptfoo, pyrit, deepteam, dreadnode")
     ap.add_argument("--framework-version", required=True)
     ap.add_argument("--adapter", required=True, choices=sorted(board.ADAPTER_KINDS),
@@ -84,7 +90,7 @@ def main() -> int:
         "submittedBy": args.submitted_by,
         "date": args.date,
         "artifacts": args.artifacts,
-        "episodes": envelopes(args.results),
+        "episodes": envelopes(args.results, omit_errors=args.omit_errors),
     }
     sub_id = args.out.stem
     board.validate(sub_id, doc)
