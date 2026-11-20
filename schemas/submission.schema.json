@@ -114,9 +114,19 @@
       ],
       "properties": {
         "maxTurns": {
-          "type": "integer",
-          "minimum": 1,
-          "description": "Attack messages allowed per episode, including the first."
+          "description": "Attack messages allowed per episode, including the first. A single integer is the legacy shared limit for both injection types.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["direct", "indirect"],
+              "properties": {
+                "direct": {"type": "integer", "minimum": 1},
+                "indirect": {"type": "integer", "minimum": 1}
+              }
+            },
+            {"type": "integer", "minimum": 1}
+          ]
         }
       }
     },

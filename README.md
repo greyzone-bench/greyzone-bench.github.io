@@ -85,10 +85,10 @@ from different releases are not comparable and are never mixed.
 ## Adding results
 
 A **campaign** is one attacker configuration (service, version, attacker
-model, adapter, settings, turn budget) run against **every attack scenario of
-one range**. Each campaign is a pull request adding one file under
-`data/submissions/`; the [submission guide](data/submissions/README.md) is
-the full specification and [`schemas/`](schemas/) holds the formal schemas.
+model, adapter, settings, direct and indirect turn budgets) run against
+**every attack scenario of one range**. Each campaign is a pull request that
+adds one file under `data/submissions/`. The [submission guide](data/submissions/README.md)
+is the full specification, and [`schemas/`](schemas/) holds the formal schemas.
 Submit all `completed` and `no_reply` attack episodes. Episodes with status
 `error` are optional and can be skipped with `build_submission.py --omit-errors`.
 

@@ -213,6 +213,7 @@ class SubmissionTests(unittest.TestCase):
             folder = root / "submissions"
             folder.mkdir()
             original = campaign()
+            original["budget"] = EXAMPLE["budget"]
             (folder / "fixture-campaign.json").write_text(json.dumps(original))
             with patch.object(submissions, "RESULTS_PATH", results), \
                  patch.object(submissions, "SUBMISSIONS_DIR", folder), redirect_stdout(io.StringIO()):
@@ -220,6 +221,7 @@ class SubmissionTests(unittest.TestCase):
             self.assertEqual([r["id"] for r in doc["results"]], ["fixture-campaign"])
             self.assertEqual(doc["announcement"], announcement)
             self.assertEqual(doc["results"][0]["victim"]["model"], "gpt-4.1-mini-2025-04-14")
+            self.assertEqual(doc["results"][0]["budget"], original["budget"])
             self.assertNotIn("episodes", doc["results"][0])
             self.assertEqual(json.loads((folder / "fixture-campaign.json").read_text()), original)
 
@@ -244,7 +246,7 @@ class BuildSubmissionTests(unittest.TestCase):
         self.assertTrue(all(tuple(e) == submissions.EPISODE_FIELDS for e in found))  # stripped
         self.assertEqual(out.getvalue().count("skip"), 3)
 
-    def test_builder_can_omit_errors_and_keeps_no_reply(self):
+    def test_builder_records_budgets_and_can_omit_errors(self):
         import build_submission
 
         doc = campaign("kubectl-ai")
@@ -262,14 +264,18 @@ class BuildSubmissionTests(unittest.TestCase):
             output = root / "campaign.json"
             args = ["build_submission.py", "--range", "kubectl-ai", "--results", str(raw),
                     "--framework", "pyrit", "--framework-version", "0.9.0", "--adapter", "custom",
-                    "--attacker-model", "fixture-attacker", "--max-turns", "5",
+                    "--attacker-model", "fixture-attacker",
                     "--submitted-by", "fixture-lab", "--artifacts", "https://example.org/fixture-logs",
                     "--out", str(output)]
-            for extra_args, expected_errors in [([], 1), (["--omit-errors"], 0)]:
+            cases = [(["--max-turns", "5"], 1, 5),
+                     (["--max-turns-direct", "5", "--max-turns-indirect", "10", "--omit-errors"], 0, 10)]
+            for extra_args, expected_errors, indirect in cases:
                 with self.subTest(extra_args=extra_args):
                     with patch("sys.argv", args + extra_args), redirect_stdout(io.StringIO()):
                         self.assertEqual(build_submission.main(), 0)
-                    statuses = [e["status"] for e in json.loads(output.read_text())["episodes"]]
+                    result = json.loads(output.read_text())
+                    self.assertEqual(result["budget"], {"maxTurns": {"direct": 5, "indirect": indirect}})
+                    statuses = [e["status"] for e in result["episodes"]]
                     self.assertEqual(statuses.count("completed"), len(doc["episodes"]) - 2)
                     self.assertEqual(statuses.count("no_reply"), 1)
                     self.assertEqual(statuses.count("error"), expected_errors)
@@ -317,6 +323,21 @@ class ContractTests(unittest.TestCase):
         broken = copy.deepcopy(EXAMPLE)
         broken["episodes"][0]["status"] = "error"  # a score on a non-completed episode
         self.assertFalse(validator.is_valid(broken))
+
+    def test_split_budgets_require_two_positive_integers(self):
+        try:
+            import jsonschema
+        except ImportError:
+            self.skipTest("jsonschema is not installed")
+        validator = jsonschema.Draft202012Validator(self.submission)
+        cases = [{"direct": 5}, {"indirect": 10}, {"direct": 0, "indirect": 10},
+                 {"direct": 5, "indirect": True}, {"direct": 5, "indirect": 10, "other": 1}]
+        for turns in cases:
+            with self.subTest(turns=turns):
+                doc = dict(EXAMPLE, budget={"maxTurns": turns})
+                self.assertFalse(validator.is_valid(doc))
+                with self.assertRaises(submissions.Invalid):
+                    submissions.check_submission(doc)
 
 
 if __name__ == "__main__":

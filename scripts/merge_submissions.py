@@ -210,7 +210,14 @@ def check_submission(doc) -> None:
     budget = doc["budget"]
     exact_fields(budget, {"maxTurns"}, "budget")
     turns = budget["maxTurns"]
-    check(isinstance(turns, int) and not isinstance(turns, bool) and turns >= 1, "'budget.maxTurns' must be an integer ≥ 1")
+    if isinstance(turns, dict):
+        exact_fields(turns, {"direct", "indirect"}, "budget.maxTurns")
+        limits = [(f"budget.maxTurns.{mode}", count) for mode, count in turns.items()]
+    else:
+        limits = [("budget.maxTurns", turns)]
+    for field, count in limits:
+        check(isinstance(count, int) and not isinstance(count, bool) and count >= 1,
+              f"'{field}' must be an integer ≥ 1")
 
     check(is_text(doc["submittedBy"], 80), "'submittedBy' must be a short string")
     check(isinstance(doc["date"], str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", doc["date"]), "'date' must be YYYY-MM-DD")

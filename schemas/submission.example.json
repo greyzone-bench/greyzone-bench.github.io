@@ -15,7 +15,7 @@
     "range": "Clawith"
   },
   "budget": {
-    "maxTurns": 5
+    "maxTurns": {"direct": 5, "indirect": 10}
   },
   "submittedBy": "your-lab",
   "date": "2026-12-01",

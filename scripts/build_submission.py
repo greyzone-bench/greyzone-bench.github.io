@@ -15,7 +15,8 @@ Example, after running every Clawith scenario with the Promptfoo adapter:
     python3 scripts/build_submission.py --range Clawith \\
         --results ../GreyZone/Clawith/.run/oracle \\
         --framework promptfoo --framework-version 0.122.2 --adapter official \\
-        --attacker-model glm-4.7 --max-turns 5 --settings "crescendo, policy plugin" \\
+        --attacker-model glm-4.7 --max-turns-direct 5 --max-turns-indirect 10 \\
+        --settings "crescendo, policy plugin" \\
         --submitted-by your-lab --artifacts https://example.org/your-lab/clawith \\
         --out data/submissions/your-lab-promptfoo-clawith-2026-12-01.json
 """
@@ -70,12 +71,22 @@ def main() -> int:
                     help="official: the adapter shipped under <range>/redteam/<framework>; custom: your own MCP integration")
     ap.add_argument("--attacker-model", required=True)
     ap.add_argument("--settings", help="short description of strategy, plugins and other attacker settings")
-    ap.add_argument("--max-turns", required=True, type=int, help="attack-message budget per episode")
+    ap.add_argument("--max-turns-direct", type=int, help="attack-message budget per direct-injection episode")
+    ap.add_argument("--max-turns-indirect", type=int, help="attack-message budget per indirect-injection episode")
+    ap.add_argument("--max-turns", type=int, help="shared budget for both injection types")
     ap.add_argument("--submitted-by", required=True)
     ap.add_argument("--artifacts", required=True, help="public URL of the raw result files and evidence")
     ap.add_argument("--date", default=date.today().isoformat())
     ap.add_argument("--out", required=True, type=Path, help="data/submissions/<campaign-id>.json")
     args = ap.parse_args()
+
+    direct, indirect = args.max_turns_direct, args.max_turns_indirect
+    if args.max_turns is not None:
+        if direct is not None or indirect is not None:
+            ap.error("--max-turns cannot be combined with the direct or indirect budget flags")
+        direct = indirect = args.max_turns
+    elif direct is None or indirect is None:
+        ap.error("provide both --max-turns-direct and --max-turns-indirect, or a shared --max-turns")
 
     attacker = {"framework": args.framework, "frameworkVersion": args.framework_version,
                 "model": args.attacker_model, "adapter": args.adapter}
@@ -86,7 +97,7 @@ def main() -> int:
         "benchmark": {"version": board.BENCHMARK["version"]},
         "attacker": attacker,
         "victim": {"range": args.range},
-        "budget": {"maxTurns": args.max_turns},
+        "budget": {"maxTurns": {"direct": direct, "indirect": indirect}},
         "submittedBy": args.submitted_by,
         "date": args.date,
         "artifacts": args.artifacts,

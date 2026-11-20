@@ -4,7 +4,7 @@
 - Benchmark release: `v1.0.1` (commit, if not the release commit):
 - Range and attack scenarios run: all of `<range>` (repeats per scenario:)
 - Attacker service, version, model and adapter:
-- Attack settings (strategy, plugins) and `budget.maxTurns`:
+- Attack settings (strategy, plugins) and turn limits in `budget.maxTurns.direct` and `budget.maxTurns.indirect`
 - Raw Oracle result files and evidence:
 - All `completed` and `no_reply` attack episodes are included: yes / no
 

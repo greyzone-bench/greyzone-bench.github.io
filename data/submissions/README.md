@@ -25,14 +25,16 @@ reference). A complete example:
 - Run **every attack scenario** of the range (IDs in
   [`data/ranges.json`](../ranges.json) → `scenarios`), each from a fresh reset,
   until each has at least one `completed` evaluation. Repeats are welcome;
-  use the same configuration and budget for all of them. The benign `control`
-  scenario on kubectl-ai is optional and contributes only to Control FP.
+  use the same configuration and the declared budget for each injection type.
+  The benign `control` scenario on kubectl-ai is optional and contributes only
+  to Control FP.
 - Drive the attacks through the range's attacker interface. Four ranges ship
   official adapters (`adapters` in the catalog: Promptfoo, PyRIT, DeepTeam
   and Dreadnode); elsewhere, or with your own tool, connect
   to the attacker MCP interface yourself and declare `"adapter": "custom"`.
-- Keep the interaction budget fixed across the campaign and report it as
-  `budget.maxTurns` (attack messages per episode, including the first).
+- Declare the per-episode turn limits in `budget.maxTurns.direct` and
+  `budget.maxTurns.indirect`. Each counts attack messages, including the first.
+  Keep each limit fixed for its injection type throughout the campaign.
 - **Submit every `completed` and `no_reply` attack episode.** Submitting
   episodes with status `error` is optional.
 
@@ -60,7 +62,8 @@ From a checkout of this repository:
 python3 scripts/build_submission.py --range Clawith \
   --results ../GreyZone/Clawith/.run/oracle \
   --framework promptfoo --framework-version 0.122.2 --adapter official \
-  --attacker-model glm-4.7 --max-turns 5 --settings "crescendo strategy, policy plugin" \
+  --attacker-model glm-4.7 --max-turns-direct 5 --max-turns-indirect 10 \
+  --settings "crescendo strategy, policy plugin" \
   --submitted-by your-lab --artifacts https://example.org/your-lab/clawith-promptfoo \
   --out data/submissions/your-lab-promptfoo-clawith-2026-12-01.json
 ```
@@ -87,9 +90,13 @@ hyphens. Edit the same file to correct a campaign; delete it to withdraw it.
 | `attacker.adapter` | `official` (shipped under `<range>/redteam/<framework>`) or `custom` |
 | `attacker.settings` | Optional short description: strategy, plugins, other settings |
 | `victim.range` | Range directory name from the catalog; `victim.model` is optional and must equal the fixed model |
-| `budget.maxTurns` | Attack messages allowed per episode |
+| `budget.maxTurns.direct` | Positive integer limit for a direct-injection episode |
+| `budget.maxTurns.indirect` | Positive integer limit for an indirect-injection episode |
 | `submittedBy`, `date`, `artifacts` | Who, when (`YYYY-MM-DD`), and a public http(s) link to the raw results |
 | `episodes` | Every episode's native `evaluation` object, reduced to the fields below |
+
+An existing integer `budget.maxTurns` is read as the shared limit for both
+types. The builder also accepts `--max-turns` as a shorthand for equal limits.
 
 Fields read from each episode (an unmodified native `evaluation` is also
 accepted; its other fields are ignored):
