@@ -315,13 +315,25 @@
     padding: 2rem 1rem; color: var(--text-muted); text-align: center;
   }
   tr.no-results:hover { background: transparent; }
-  tbody tr.group-row td {
+  tbody tr.group-row > td {
     padding: 0.55rem 1rem;
     background: var(--gray-100);
     font-size: 0.8125rem; color: var(--text-secondary);
   }
   tbody tr.group-row:hover { background: transparent; }
   tr.group-row b { margin-right: 0.6rem; font-size: 0.875rem; font-weight: 600; color: var(--text); }
+  .scenario-toggle { margin-left: 0.6rem; color: var(--accent); font-weight: 500; }
+  .scenario-scores {
+    margin: 0.5rem 0 0.25rem; overflow: auto;
+    background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-md);
+  }
+  .scenario-scores th, .scenario-scores td { position: static; padding: 0.5rem 0.75rem; }
+  .scenario-scores th[scope="row"] {
+    border-bottom: 1px solid var(--border);
+    text-align: left; font-family: var(--mono); font-size: 0.75rem; font-weight: 400;
+    overflow-wrap: anywhere;
+  }
+  .scenario-scores tr:last-child th[scope="row"] { border-bottom: none; }
   .cta { font-weight: 500; }
 
   /* ranges cells */
@@ -554,10 +566,10 @@
     </div>
 
     <p class="legend" id="attacker-legend">
-      <b>Average score</b> — each attack framework's application averages, weighted by the number of attack scenarios in each application. <b>Scenario coverage</b> shows how many benchmark scenarios the framework evaluated. The average uses covered scenarios.
+      <b>Average score</b> — each covered scenario contributes equally to the framework's score. <b>Scenario coverage</b> shows how many benchmark scenarios the framework evaluated. <b>Scored repeats</b> shows the number of completed episodes per covered scenario, or the range when counts vary.
     </p>
     <p class="legend" id="application-legend" hidden>
-      <b>Average score</b> — the mean of an attack framework's submitted campaign scores for this application. Each submission has equal weight.
+      <b>Average score</b> — completed episodes are averaged within each scenario, then across the application's scenarios. <b>Scored repeats</b> shows the number of completed episodes per scenario, or the range when counts vary.
     </p>
     <p class="legend" id="submissions-legend" hidden>
       <b>Score</b> (0–1) — each <code>completed</code> episode scores the best <code>normalized</code> score of its in-scope Oracle surfaces. Episode scores are averaged within each attack scenario, then across the application's scenarios.
@@ -695,15 +707,16 @@ const RANK = { key: "rank", label: "#", num: true, render: () => "", sort: null 
 const FRAMEWORK = { key: "framework", label: "Attacker",
   render: r => `<span class="framework">${esc(r.framework)}</span>`, sort: r => r.framework };
 const AVERAGE = { key: "score", label: "Average score", num: true, render: r => meter(r.score, 3), sort: r => r.score };
-const SUBMISSION_COUNT = { key: "submissions", label: "Submissions", num: true,
-  render: r => r.submissions, sort: r => r.submissions };
+const REPEATS = { key: "repeats", label: "Scored repeats", num: true,
+  render: r => r.minRepeats === r.maxRepeats ? r.minRepeats : `${r.minRepeats}–${r.maxRepeats}`,
+  sort: r => r.minRepeats };
 const COVERAGE = { key: "coverage", label: "Scenario coverage", num: true,
   render: r => `${r.scenarioCount} / ${totalScenarios}`, sort: r => r.scenarioCount };
 const SUBMISSION = { key: "id", label: "Submission",
   render: r => `<a href="data/submissions/${encodeURIComponent(r.id)}.json">${esc(r.id)}</a>`, sort: r => r.id };
 const VIEWS = {
-  attacker: [RANK, FRAMEWORK, AVERAGE, COVERAGE, SUBMISSION_COUNT],
-  application: [RANK, FRAMEWORK, AVERAGE, SUBMISSION_COUNT],
+  attacker: [RANK, FRAMEWORK, AVERAGE, COVERAGE, REPEATS],
+  application: [RANK, FRAMEWORK, AVERAGE, REPEATS],
   submissions: [RANK, ATTACKER, ...METRICS, SUBMISSION],
 };
 
@@ -714,28 +727,40 @@ let RESULTS = [];
 let APPLICATIONS = new Map();
 let ATTACKER_RESULTS = [];
 let totalScenarios = 0;
+const openApplications = new Set();
 
 function applicationAverages(campaigns) {
   const byFramework = new Map();
   for (const campaign of campaigns) {
     const framework = campaign.attacker.framework;
-    if (!byFramework.has(framework)) byFramework.set(framework, { framework, score: 0, submissions: 0 });
-    const summary = byFramework.get(framework);
-    summary.score += M(campaign).score;
-    summary.submissions += 1;
+    if (!byFramework.has(framework)) byFramework.set(framework, new Map());
+    const scenarios = byFramework.get(framework);
+    for (const { id, score, completed } of campaign.scenarios) {
+      if (!scenarios.has(id)) scenarios.set(id, { score: 0, completed: 0 });
+      const result = scenarios.get(id);
+      result.score += score * completed;
+      result.completed += completed;
+    }
   }
-  return [...byFramework.values()].map(row => ({ ...row, score: row.score / row.submissions }));
+  return [...byFramework].map(([framework, scenarios]) => {
+    const results = [...scenarios.values()];
+    for (const result of results) result.score /= result.completed;
+    const repeats = results.map(result => result.completed);
+    const score = results.reduce((sum, result) => sum + result.score, 0) / results.length;
+    return { framework, scenarios, score, minRepeats: Math.min(...repeats), maxRepeats: Math.max(...repeats) };
+  });
 }
 
 function attackerAverages(applications) {
   const byFramework = new Map();
-  for (const { scenarioCount, attackers } of applications.values()) {
-    for (const { framework, score, submissions } of attackers) {
-      if (!byFramework.has(framework)) byFramework.set(framework, { framework, score: 0, submissions: 0, scenarioCount: 0 });
+  for (const { attackers } of applications.values()) {
+    for (const { framework, scenarios, score, minRepeats, maxRepeats } of attackers) {
+      if (!byFramework.has(framework)) byFramework.set(framework, { framework, score: 0, scenarioCount: 0, minRepeats, maxRepeats });
       const summary = byFramework.get(framework);
-      summary.score += score * scenarioCount;
-      summary.submissions += submissions;
-      summary.scenarioCount += scenarioCount;
+      summary.score += score * scenarios.size;
+      summary.scenarioCount += scenarios.size;
+      summary.minRepeats = Math.min(summary.minRepeats, minRepeats);
+      summary.maxRepeats = Math.max(summary.maxRepeats, maxRepeats);
     }
   }
   return [...byFramework.values()].map(row => ({ ...row, score: row.score / row.scenarioCount }));
@@ -769,10 +794,36 @@ function resultRows(rows, columns) {
   ).join("");
 }
 
+function scenarioScores(name, application) {
+  const attackers = [...application.attackers].sort((a, b) => a.framework.localeCompare(b.framework));
+  const headings = attackers.map(({ framework }) => `<th scope="col" class="num">${esc(framework)}</th>`).join("");
+  const rows = application.scenarios.map(({ id }) => {
+    const scores = attackers.map(({ scenarios }) => {
+      const result = scenarios.get(id);
+      return result ? `<td class="num" title="${result.completed} scored repeats">${result.score.toFixed(3)}</td>`
+        : '<td class="num">—</td>';
+    }).join("");
+    return `<tr><th scope="row">${esc(id)}</th>${scores}</tr>`;
+  }).join("");
+  return `<div class="scenario-scores"><table aria-label="Scenario scores for ${esc(name)}">
+    <thead><tr><th scope="col">Scenario</th>${headings}</tr></thead><tbody>${rows}</tbody>
+  </table></div>`;
+}
+
 function applicationGroup(name, application, columns, view) {
   const { model, campaigns, attackers } = application;
   const n = columns.length;
-  const head = `<tr class="group-row"><td colspan="${n}"><b>${esc(name)}</b>victim ${esc(model)} · ${campaigns.length} campaign${campaigns.length === 1 ? "" : "s"}</td></tr>`;
+  const title = `<b>${esc(name)}</b>victim ${esc(model)}`;
+  let label = title;
+  if (view === "application" && campaigns.length) {
+    label = `<details data-application="${esc(name)}"${openApplications.has(name) ? " open" : ""}>
+      <summary>${title}<span class="scenario-toggle">Scenario scores</span></summary>
+      ${scenarioScores(name, application)}
+    </details>`;
+  } else if (view === "submissions") {
+    label += ` · ${campaigns.length} campaign${campaigns.length === 1 ? "" : "s"}`;
+  }
+  const head = `<tr class="group-row"><td colspan="${n}">${label}</td></tr>`;
   if (!campaigns.length) {
     return head + `<tr class="no-results"><td colspan="${n}">No campaigns on ${esc(name)} yet. <a class="cta" href="#submit">Submit one</a></td></tr>`;
   }
@@ -793,9 +844,13 @@ function renderResults() {
     `</th>`
   ).join("");
 
-  const count = view === "attacker" ? ATTACKER_RESULTS.length
-    : currentRange === "all" ? RESULTS.length : APPLICATIONS.get(currentRange).campaigns.length;
-  const unit = view === "attacker" ? "attacker" : "campaign";
+  const groups = [...APPLICATIONS].filter(([name, application]) =>
+    currentRange === "all" ? application.campaigns.length : name === currentRange);
+  const [count, unit] = {
+    attacker: [ATTACKER_RESULTS.length, "attacker"],
+    application: [groups.filter(([, application]) => application.campaigns.length).length, "application"],
+    submissions: [groups.reduce((sum, [, application]) => sum + application.campaigns.length, 0), "campaign"],
+  }[view];
   document.getElementById("result-count").textContent =
     count ? `· ${count} ${unit}${count === 1 ? "" : "s"}` : "";
   const body = document.getElementById("results-body");
@@ -804,8 +859,6 @@ function renderResults() {
   } else if (view === "attacker") {
     body.innerHTML = resultRows(ATTACKER_RESULTS, columns);
   } else {
-    const groups = [...APPLICATIONS].filter(([name, application]) =>
-      currentRange === "all" ? application.campaigns.length : name === currentRange);
     body.innerHTML = groups.map(([name, application]) => applicationGroup(name, application, columns, view)).join("");
   }
 
@@ -818,8 +871,8 @@ function renderResults() {
 
 function renderRangeFilter() {
   const select = document.getElementById("range-filter");
-  select.innerHTML = `<option value="all">All applications (${RESULTS.length})</option>` +
-    [...APPLICATIONS].map(([name, { campaigns }]) => `<option value="${esc(name)}">${esc(name)} (${campaigns.length})</option>`).join("");
+  select.innerHTML = `<option value="all">All applications</option>` +
+    [...APPLICATIONS.keys()].map(name => `<option value="${esc(name)}">${esc(name)}</option>`).join("");
   select.value = currentRange;
 }
 
@@ -833,6 +886,13 @@ document.getElementById("range-filter").addEventListener("change", ev => {
   currentRange = ev.target.value;
   renderResults();
 });
+
+document.getElementById("results-body").addEventListener("toggle", ev => {
+  const details = ev.target;
+  if (!details.matches("details[data-application]")) return;
+  if (details.open) openApplications.add(details.dataset.application);
+  else openApplications.delete(details.dataset.application);
+}, true);
 
 /* ---------- taxonomy ---------- */
 const TAXONOMY = [
@@ -934,7 +994,7 @@ function renderRanges(data) {
     }
     APPLICATIONS = new Map(ranges.ranges.map(r => {
       const campaigns = RESULTS.filter(row => row.victim.range === r.dir);
-      return [r.dir, { model: r.model, scenarioCount: r.scenarios.length, campaigns, attackers: applicationAverages(campaigns) }];
+      return [r.dir, { model: r.model, scenarios: r.scenarios, campaigns, attackers: applicationAverages(campaigns) }];
     }));
     ATTACKER_RESULTS = attackerAverages(APPLICATIONS);
     totalScenarios = ranges.ranges.reduce((count, r) => count + r.scenarios.length, 0);
