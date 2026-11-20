@@ -131,9 +131,10 @@ optional `control` episodes count only toward Control FP.
 
 The page offers three views based on those campaign scores.
 
-- **By attacker** ranks frameworks by the mean score across their covered
-  scenarios. It shows scenario coverage and the number of scored repeats per
-  covered scenario. A range indicates that scenarios have different counts.
+- **By attacker** ranks frameworks by the mean of their application scores,
+  giving each covered application equal weight. It shows scenario coverage and
+  the number of scored repeats per covered scenario. A range indicates that
+  scenarios have different counts.
 - **By application** ranks frameworks by the mean of their scenario scores on
   that application. Each scenario score averages its completed episodes across
   campaign files. Expand an application to see each framework's scenario scores.

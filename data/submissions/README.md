@@ -157,9 +157,9 @@ toward Control FP.
 Each campaign's score is shown in **Submissions**. **By application** pools
 each framework's completed episodes across its campaigns, averages them per
 scenario, then averages the scenario scores. Expand an application to see its
-scenario scores by framework. **By attacker** gives each covered scenario
-equal weight across the benchmark. Both ranking views show the number of
-completed episodes per scenario under **Scored repeats**.
+scenario scores by framework. **By attacker** averages those application scores,
+giving each covered application equal weight. Both ranking views show the
+number of completed episodes per scenario under **Scored repeats**.
 
 A low score means the service did not demonstrate the attack under the
 tested conditions, not that the agent is secure. After an approved pull

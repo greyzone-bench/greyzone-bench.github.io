@@ -566,7 +566,7 @@
     </div>
 
     <p class="legend" id="attacker-legend">
-      <b>Average score</b> — each covered scenario contributes equally to the framework's score. <b>Scenario coverage</b> shows how many benchmark scenarios the framework evaluated. <b>Scored repeats</b> shows the number of completed episodes per covered scenario, or the range when counts vary.
+      <b>Average score</b> — the mean of the framework's application scores, with equal weight for each covered application. <b>Scenario coverage</b> shows how many benchmark scenarios the framework evaluated. <b>Scored repeats</b> shows the number of completed episodes per covered scenario, or the range when counts vary.
     </p>
     <p class="legend" id="application-legend" hidden>
       <b>Average score</b> — completed episodes are averaged within each scenario, then across the application's scenarios. <b>Scored repeats</b> shows the number of completed episodes per scenario, or the range when counts vary.
@@ -755,15 +755,18 @@ function attackerAverages(applications) {
   const byFramework = new Map();
   for (const { attackers } of applications.values()) {
     for (const { framework, scenarios, score, minRepeats, maxRepeats } of attackers) {
-      if (!byFramework.has(framework)) byFramework.set(framework, { framework, score: 0, scenarioCount: 0, minRepeats, maxRepeats });
+      if (!byFramework.has(framework)) {
+        byFramework.set(framework, { framework, score: 0, applicationCount: 0, scenarioCount: 0, minRepeats, maxRepeats });
+      }
       const summary = byFramework.get(framework);
-      summary.score += score * scenarios.size;
+      summary.score += score;
+      summary.applicationCount += 1;
       summary.scenarioCount += scenarios.size;
       summary.minRepeats = Math.min(summary.minRepeats, minRepeats);
       summary.maxRepeats = Math.max(summary.maxRepeats, maxRepeats);
     }
   }
-  return [...byFramework.values()].map(row => ({ ...row, score: row.score / row.scenarioCount }));
+  return [...byFramework.values()].map(row => ({ ...row, score: row.score / row.applicationCount }));
 }
 
 function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
