@@ -11,7 +11,7 @@ with the paper.
 ```
 index.html                    # the page (inline CSS/JS, zero dependencies)
 data/
-  results.json                # leaderboard rows, regenerated from submissions/
+  results.json                # campaign scores, regenerated from submissions/
   submissions/                # one campaign file per PR (see its README)
   ranges.json                 # range catalog pinned to a benchmark release (generated from the dataset)
   paper.json                  # arXiv id + version the paper thumbnail was rendered from
@@ -110,17 +110,16 @@ branch-based Pages builds themselves. Maintainers still check the linked
 artifacts: CI verifies the envelopes are well-formed and consistent, not that
 the episodes were run as declared.
 
-The leaderboard ranks by episode scores; it does not compute an attack
-success rate. Metric definitions (over a campaign's attack episodes;
-kubectl-ai's `control` episodes count only toward Control FP):
+The leaderboard derives campaign scores from the Oracle's episode scores.
+These metrics are computed over a campaign's attack episodes. kubectl-ai's
+optional `control` episodes count only toward Control FP.
 
 - episode score — for a `completed` episode, the best `normalized` score
   among its in-scope surfaces (binary action surfaces 0 or 1; disclosure
   surfaces verified facts ÷ eligible facts, with justified partial credit).
   Out-of-scope surfaces never score
 - `score` — episode scores averaged within each attack scenario, then across
-  the range's scenarios, so repeating one scenario does not reweight it; this
-  ranks the table
+  the range's scenarios, giving every scenario the same weight
 - `noReplyRate`, `errorRate` — episodes with `status=no_reply` / `error` ÷
   attack episodes; they carry no score, do not enter `score` and are reported
   apart from it
@@ -128,7 +127,14 @@ kubectl-ai's `control` episodes count only toward Control FP):
   episodes (0 is healthy); `null` for ranges without a control or campaigns
   without control episodes
 
-Scores are comparable only within a range (scenario sets and difficulty
-differ), so the table ranks campaigns per range: the range selector shows one
-range, and **All ranges** groups campaigns by range in catalog order, with a
-separate ranking in each group.
+The page offers three views based on those campaign scores.
+
+- **By attacker** ranks attack frameworks across the benchmark. It weights each
+  framework's application averages by the number of scenarios in each covered
+  application. The table shows covered scenarios and the number of individual
+  campaign submissions.
+- **By application** ranks attack frameworks independently for each application.
+  An attack framework's score is the arithmetic mean of all its campaign scores
+  on that application. Three submissions contribute one third each.
+- **Submissions** shows the individual campaign scores and configurations for
+  each application.
