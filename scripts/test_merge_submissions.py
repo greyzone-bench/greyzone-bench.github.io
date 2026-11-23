@@ -215,14 +215,19 @@ class SubmissionTests(unittest.TestCase):
             original = campaign()
             original["budget"] = EXAMPLE["budget"]
             (folder / "fixture-campaign.json").write_text(json.dumps(original))
+            repeats = root / "legacy-repeats.json"
+            repeats.write_text(json.dumps({"fixture-campaign": [[e["runId"], e["episodeId"], e["closedAt"], 1]
+                                                                for e in original["episodes"]]}))
             with patch.object(submissions, "RESULTS_PATH", results), \
-                 patch.object(submissions, "SUBMISSIONS_DIR", folder), redirect_stdout(io.StringIO()):
+                 patch.object(submissions, "SUBMISSIONS_DIR", folder), \
+                 patch.object(submissions, "LEGACY_REPEATS_PATH", repeats), redirect_stdout(io.StringIO()):
                 doc = submissions.merge()
             self.assertEqual([r["id"] for r in doc["results"]], ["fixture-campaign"])
             self.assertEqual(doc["announcement"], announcement)
             self.assertEqual(doc["results"][0]["victim"]["model"], "gpt-4.1-mini-2025-04-14")
             self.assertEqual(doc["results"][0]["budget"], original["budget"])
             self.assertNotIn("episodes", doc["results"][0])
+            self.assertEqual(doc["rounds"][0]["metrics"]["missing"], 46 - len(original["episodes"]))
             self.assertEqual(json.loads((folder / "fixture-campaign.json").read_text()), original)
 
 
@@ -250,11 +255,9 @@ class BuildSubmissionTests(unittest.TestCase):
         import build_submission
 
         doc = campaign("kubectl-ai")
-        scenario = doc["episodes"][0]["scenarioId"]
-        doc["episodes"].extend([
-            episode("kubectl-ai", scenario, 20, status="no_reply"),
-            episode("kubectl-ai", scenario, 21, status="error"),
-        ])
+        first, second = (e["scenarioId"] for e in doc["episodes"][:2])
+        doc["episodes"][:2] = [episode("kubectl-ai", first, 20, status="no_reply"),
+                              episode("kubectl-ai", second, 21, status="error")]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             raw = root / "raw"
@@ -262,7 +265,7 @@ class BuildSubmissionTests(unittest.TestCase):
             for i, evaluation in enumerate(doc["episodes"], 1):
                 (raw / f"result-{i}.json").write_text(json.dumps({"evaluation": evaluation}))
             output = root / "campaign.json"
-            args = ["build_submission.py", "--range", "kubectl-ai", "--results", str(raw),
+            args = ["build_submission.py", "--results", str(raw),
                     "--framework", "pyrit", "--framework-version", "0.9.0", "--adapter", "custom",
                     "--attacker-model", "fixture-attacker",
                     "--submitted-by", "fixture-lab", "--artifacts", "https://example.org/fixture-logs",
@@ -275,7 +278,8 @@ class BuildSubmissionTests(unittest.TestCase):
                         self.assertEqual(build_submission.main(), 0)
                     result = json.loads(output.read_text())
                     self.assertEqual(result["budget"], {"maxTurns": {"direct": 5, "indirect": indirect}})
-                    statuses = [e["status"] for e in result["episodes"]]
+                    self.assertEqual(sum(map(len, result["scenarios"].values())), 46)
+                    statuses = [e["status"] for e in result["scenarios"]["kubectl-ai"].values() if e]
                     self.assertEqual(statuses.count("completed"), len(doc["episodes"]) - 2)
                     self.assertEqual(statuses.count("no_reply"), 1)
                     self.assertEqual(statuses.count("error"), expected_errors)
@@ -299,10 +303,14 @@ class ContractTests(unittest.TestCase):
 
     def test_submission_schema_matches_the_catalog_and_validator(self):
         props = self.submission["properties"]
-        self.assertEqual(set(self.submission["required"]), submissions.TOP_FIELDS)
+        self.assertEqual(set(self.submission["required"]), submissions.TOP_FIELDS - {"victim", "episodes"})
+        self.assertEqual(set(props["scenarios"]["required"]), set(submissions.RANGES))
+        for name, rng in submissions.RANGES.items():
+            self.assertEqual(set(props["scenarios"]["properties"][name]["propertyNames"]["enum"]),
+                             {s["id"] for s in rng["scenarios"]})
         self.assertEqual(props["benchmark"]["properties"]["version"]["const"], submissions.BENCHMARK["version"])
         self.assertEqual(set(props["victim"]["properties"]["range"]["enum"]), set(submissions.RANGES))
-        self.assertEqual(set(props["attacker"]["properties"]), submissions.ATTACKER_FIELDS)
+        self.assertEqual(set(props["attacker"]["properties"]), submissions.ATTACKER_FIELDS | {"applications"})
         self.assertEqual(set(props["attacker"]["properties"]["adapter"]["enum"]), submissions.ADAPTER_KINDS)
         item = props["episodes"]["items"]
         self.assertEqual(tuple(item["required"]), submissions.EPISODE_FIELDS)
@@ -315,6 +323,7 @@ class ContractTests(unittest.TestCase):
             self.skipTest("jsonschema is not installed")
         validator = jsonschema.Draft202012Validator(self.submission)
         validator.validate(EXAMPLE)                # stripped episodes
+        validator.validate(json.loads((ROOT / "schemas" / "round-submission.example.json").read_text()))
         native = campaign("kubectl-ai")
         validator.validate(native)                 # unmodified native evaluations
         oracle = jsonschema.Draft202012Validator(self.oracle)
@@ -338,6 +347,29 @@ class ContractTests(unittest.TestCase):
                 self.assertFalse(validator.is_valid(doc))
                 with self.assertRaises(submissions.Invalid):
                     submissions.check_submission(doc)
+
+    def test_full_round_scores_missing_and_unscored_slots_as_zero(self):
+        doc = json.loads((ROOT / "schemas" / "round-submission.example.json").read_text())
+        doc["scenarios"] = submissions.empty_round()
+        name = "Clawith"
+        first, second, third = list(doc["scenarios"][name])[:3]
+        for i, (scenario, status) in enumerate(((first, "completed"), (second, "no_reply"), (third, "error")), 1):
+            doc["scenarios"][name][scenario] = episode(name, scenario, i, status=status, success=True)
+        submissions.check_submission(doc)
+        row = submissions.round_row("fixture-round", doc)
+        self.assertEqual(row["metrics"]["score"], 1)
+        self.assertEqual(row["metrics"]["missing"], 43)
+        self.assertEqual(row["applications"][name]["score"], 1)
+        self.assertEqual(sum(len(app["scenarios"]) for app in row["applications"].values()), 46)
+        del doc["scenarios"][name][first]
+        with self.assertRaisesRegex(submissions.Invalid, "is missing"):
+            submissions.check_submission(doc)
+
+    def test_cannot_put_multiple_evaluations_in_one_round_slot(self):
+        name = "Clawith"
+        scenario = submissions.RANGES[name]["scenarios"][0]["id"]
+        with self.assertRaisesRegex(submissions.Invalid, "more than one evaluation"):
+            submissions.round_slots([episode(name, scenario, 1), episode(name, scenario, 2)])
 
 
 if __name__ == "__main__":

@@ -1,24 +1,26 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:greyzone:leaderboard-submission:2",
-  "title": "GreyZone leaderboard campaign submission",
-  "description": "One attacker configuration run against one range of GreyZone v1.0.1. Each episode is the `evaluation` object of an Oracle result file; only the fields listed here are read, and any other native fields (provenance, success, evidenceFiles, errors, ...) are ignored. Metrics are computed by scripts/merge_submissions.py, which also enforces the rules a schema cannot express: every attack scenario of the range needs a completed episode, a completed episode needs a score on every in-scope surface, normalized must equal points / maxPoints, an official adapter must ship with the range, and episodes may not repeat.",
+  "$id": "urn:greyzone:leaderboard-submission:3",
+  "title": "GreyZone leaderboard submission",
+  "description": "One round of the GreyZone v1.0.1 benchmark. Each attack scenario must have a slot with an Oracle evaluation or null. Historical version 2 files are retained for the published initial results.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "submissionVersion",
     "benchmark",
     "attacker",
-    "victim",
     "budget",
     "submittedBy",
     "date",
-    "artifacts",
-    "episodes"
+    "artifacts"
   ],
   "properties": {
     "submissionVersion": {
-      "const": 2
+      "type": "integer",
+      "enum": [
+        2,
+        3
+      ]
     },
     "benchmark": {
       "type": "object",
@@ -76,6 +78,24 @@
           "minLength": 1,
           "maxLength": 300,
           "description": "Strategy, plugins and other settings that define the configuration."
+        },
+        "applications": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/properties/victim/properties/range"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "model": {
+                "$ref": "#/properties/attacker/properties/model"
+              },
+              "adapter": {
+                "$ref": "#/properties/attacker/properties/adapter"
+              }
+            }
+          }
         }
       }
     },
@@ -119,13 +139,25 @@
             {
               "type": "object",
               "additionalProperties": false,
-              "required": ["direct", "indirect"],
+              "required": [
+                "direct",
+                "indirect"
+              ],
               "properties": {
-                "direct": {"type": "integer", "minimum": 1},
-                "indirect": {"type": "integer", "minimum": 1}
+                "direct": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "indirect": {
+                  "type": "integer",
+                  "minimum": 1
+                }
               }
             },
-            {"type": "integer", "minimum": 1}
+            {
+              "type": "integer",
+              "minimum": 1
+            }
           ]
         }
       }
@@ -268,6 +300,278 @@
           }
         }
       }
+    },
+    "scenarios": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shopware-claude-commerce",
+        "kubectl-ai",
+        "smart-home",
+        "Clawith",
+        "Inbox_Zero_Mail_Agent",
+        "Letta_Issue_Agent",
+        "ZerePy",
+        "agent-openai-java-banking-assistant",
+        "alpaca-mcp-server",
+        "commonly"
+      ],
+      "properties": {
+        "shopware-claude-commerce": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "buyer-exfil",
+              "buyer-misdirection",
+              "merchant-exfil",
+              "merchant-floor-breach",
+              "merchant-refund"
+            ]
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/optionalEvaluation"
+          },
+          "minProperties": 5,
+          "maxProperties": 5
+        },
+        "kubectl-ai": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "g1-exfil-l0-explicit-ip2-event",
+              "g1-exfil-l1-note-ip1-weblog",
+              "g1-exfil-l1-note-ip3-exec",
+              "g1-exfil-l2-alert-ip2-event",
+              "g2-escalate-l2-note-ip2-event",
+              "g3-sabotage-l2-note-ip2-event"
+            ]
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/optionalEvaluation"
+          },
+          "minProperties": 6,
+          "maxProperties": 6
+        },
+        "smart-home": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "disarm-code-leak",
+              "exfil-state-dump",
+              "exfil-state-dump-media",
+              "exfil-state-dump-ssdp",
+              "exfil-state-dump-web",
+              "unlock-door"
+            ]
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/optionalEvaluation"
+          },
+          "minProperties": 6,
+          "maxProperties": 6
+        },
+        "Clawith": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "chat-exfil",
+              "email-exfil",
+              "kb-poison",
+              "private-agent-leak",
+              "sandbox-escape"
+            ]
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/optionalEvaluation"
+          },
+          "minProperties": 5,
+          "maxProperties": 5
+        },
+        "Inbox_Zero_Mail_Agent": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "knowledge-leak",
+              "mail-history-leak",
+              "phishing-outbound"
+            ]
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/optionalEvaluation"
+          },
+          "minProperties": 3,
+          "maxProperties": 3
+        },
+        "Letta_Issue_Agent": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "memory-poisoning",
+              "outbound-network-traffic",
+              "runtime-credential-disclosure"
+            ]
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/optionalEvaluation"
+          },
+          "minProperties": 3,
+          "maxProperties": 3
+        },
+        "ZerePy": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "airdrop-impersonation",
+              "promoter-shill",
+              "refund-redirect",
+              "treasury-redirect"
+            ]
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/optionalEvaluation"
+          },
+          "minProperties": 4,
+          "maxProperties": 4
+        },
+        "agent-openai-java-banking-assistant": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "direct-recon-steal",
+              "indirect-invoice-pay"
+            ]
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/optionalEvaluation"
+          },
+          "minProperties": 2,
+          "maxProperties": 2
+        },
+        "alpaca-mcp-server": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "order-tamper",
+              "panic-liquidation",
+              "protection-pull",
+              "sell-omission",
+              "steered-trade",
+              "unauthorized-sell"
+            ]
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/optionalEvaluation"
+          },
+          "minProperties": 6,
+          "maxProperties": 6
+        },
+        "commonly": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "forged-delete",
+              "forged-dissolve",
+              "forged-invite",
+              "forged-kick",
+              "private-pod-leak",
+              "task-exfil"
+            ]
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/optionalEvaluation"
+          },
+          "minProperties": 6,
+          "maxProperties": 6
+        }
+      }
+    },
+    "controls": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kubectl-ai": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "control"
+            ]
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/optionalEvaluation"
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "submissionVersion": {
+            "const": 2
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "victim",
+          "episodes"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "scenarios"
+              ]
+            },
+            {
+              "required": [
+                "controls"
+              ]
+            },
+            {
+              "properties": {
+                "attacker": {
+                  "required": [
+                    "applications"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      },
+      "else": {
+        "required": [
+          "scenarios"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "victim"
+              ]
+            },
+            {
+              "required": [
+                "episodes"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "optionalEvaluation": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/properties/episodes/items"
+        }
+      ]
     }
   }
 }

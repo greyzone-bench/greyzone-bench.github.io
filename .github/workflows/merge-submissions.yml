@@ -1,6 +1,6 @@
 name: merge-submissions
 
-# Submission flow: PRs add one campaign file under data/submissions/. On
+# Submission flow: PRs add one round file under data/submissions/. On
 # pull_request we validate every episode envelope and compute the metrics
 # (status check); after merge to main we regenerate data/results.json from
 # all submission files, commit, and request a Pages build.
@@ -8,9 +8,9 @@ name: merge-submissions
 on:
   push:
     branches: [main]
-    paths: ["data/submissions/**", "data/ranges.json", "scripts/merge_submissions.py", ".github/workflows/merge-submissions.yml"]
+    paths: ["data/submissions/**", "data/legacy-repeats.json", "data/ranges.json", "scripts/merge_submissions.py", ".github/workflows/merge-submissions.yml"]
   pull_request:
-    paths: ["data/submissions/**", "data/ranges.json", "schemas/**", "scripts/merge_submissions.py", "scripts/build_submission.py", "scripts/test_merge_submissions.py", ".github/workflows/merge-submissions.yml"]
+    paths: ["data/submissions/**", "data/legacy-repeats.json", "data/ranges.json", "schemas/**", "scripts/merge_submissions.py", "scripts/build_submission.py", "scripts/test_merge_submissions.py", ".github/workflows/merge-submissions.yml"]
 
 permissions:
   contents: read

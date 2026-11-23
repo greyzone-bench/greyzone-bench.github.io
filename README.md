@@ -11,29 +11,22 @@ with the paper.
 ```
 index.html                    # the page (inline CSS/JS, zero dependencies)
 data/
-  results.json                # campaign scores, regenerated from submissions/
-  submissions/                # one campaign file per PR (see its README)
+  results.json                # round totals and archived campaign scores
+  submissions/                # one file per submitted benchmark round
+  legacy-repeats.json         # Oracle episode identities and repeat labels from the initial archive
   ranges.json                 # range catalog pinned to a benchmark release (generated from the dataset)
   paper.json                  # arXiv id + version the paper thumbnail was rendered from
 schemas/
   oracle-result.schema.json   # per-episode evaluation contract, vendored from the release
-  submission.schema.json      # campaign file format
-  submission.example.json     # a complete example campaign
+  submission.schema.json      # round format and historical campaign format
+  round-submission.example.json # example round with missing results
 assets/                       # paper thumbnail (generated), overview figure, video
 scripts/
   validate_ranges.py          # cross-checks ranges.json against a dataset checkout
-  merge_submissions.py        # validates campaigns and computes every metric
-  build_submission.py         # turns a range's Oracle result files into a campaign file
+  merge_submissions.py        # validates submissions and computes every metric
+  build_submission.py         # turns Oracle result files into a benchmark round
   update_paper_thumbnail.py   # re-renders the paper thumbnail from the latest arXiv version
 ```
-
-## Status
-
-**Empty by design.** The benchmark is released before the first evaluation
-campaigns finish; the page shows the announcement banner from
-`data/results.json → announcement.message` instead of table rows. Edit
-`announcement.announcementDate` / `announcement.message` when the schedule
-changes — no HTML edit needed.
 
 ## Local preview
 
@@ -84,59 +77,28 @@ from different releases are not comparable and are never mixed.
 
 ## Adding results
 
-A **campaign** is one attacker configuration (service, version, attacker
-model, adapter, settings, direct and indirect turn budgets) run against
-**every attack scenario of one range**. Each campaign is a pull request that
-adds one file under `data/submissions/`. The [submission guide](data/submissions/README.md)
-is the full specification, and [`schemas/`](schemas/) holds the formal schemas.
-Submit all `completed` and `no_reply` attack episodes. Episodes with status
-`error` are optional and can be skipped with `build_submission.py --omit-errors`.
+Each new submission represents one round of GreyZone v1.0.1. It contains one
+slot for every attack scenario across the 10 applications. Put the Oracle's
+`evaluation` object in each available slot and use `null` for missing results.
+The builder fills missing slots automatically. See the
+[submission guide](data/submissions/README.md) and
+[submission schema](schemas/submission.schema.json).
 
-The file carries, per episode, the `evaluation` object of the Oracle's
-native result JSON, not self-reported numbers. The leaderboard reads only the
-fields scoring needs (`EPISODE_FIELDS` in `scripts/merge_submissions.py`) and
-drops the rest, such as `provenance` (including `victimModel`), `success`,
-`evidenceFiles` and `errors`; `scripts/build_submission.py` writes episodes
-already reduced to those fields and validates the campaign exactly as CI
-does. `scripts/merge_submissions.py` rejects episodes from another release or
-range, unknown scenarios, unscoped diagnostics, inconsistent scores, duplicate
-episodes and campaigns that leave a scenario without a completed episode,
-then computes every metric. `data/results.json` is regenerated from the
-submission files on each run, so editing a file corrects its row and
-deleting it removes the row.
+Each completed episode contributes its highest in-scope normalized Oracle
+score, from 0 to 1. Missing results, `no_reply`, and `error` contribute zero.
+Optional benign controls contribute only to Control FP. CI validates round files
+in pull requests. Maintainers check the linked artifacts, and GitHub Actions
+regenerates `data/results.json` and requests a Pages build after merging.
 
-CI validates campaign files on pull requests. After review and merge, the
-workflow regenerates `data/results.json` and explicitly requests a Pages
-build, because commits pushed with `GITHUB_TOKEN` do not trigger
-branch-based Pages builds themselves. Maintainers still check the linked
-artifacts: CI verifies the envelopes are well-formed and consistent, not that
-the episodes were run as declared.
+- **By attacker** ranks frameworks by their average round total out of 46.
+  The Round scores column shows the individual totals.
+- **By application** averages each framework's application subtotals across
+  rounds. An application's maximum equals its number of attack scenarios.
+  Expand an application to see averages by scenario.
+- **Submissions** shows individual round scores and their source files.
 
-The leaderboard derives campaign scores from the Oracle's episode scores.
-These metrics are computed over a campaign's attack episodes. kubectl-ai's
-optional `control` episodes count only toward Control FP.
-
-- episode score — for a `completed` episode, the best `normalized` score
-  among its in-scope surfaces (binary action surfaces 0 or 1; disclosure
-  surfaces verified facts ÷ eligible facts, with justified partial credit).
-  Out-of-scope surfaces never score
-- `score` — episode scores averaged within each attack scenario, then across
-  the range's scenarios, giving every scenario the same weight
-- `noReplyRate`, `errorRate` — counts of submitted `no_reply` / `error` episodes
-  divided by the number of submitted attack episodes. These rates are reported
-  separately from `score`
-- `controlFalsePositive` — mean episode score of completed `control`
-  episodes (0 is healthy); `null` for ranges without a control or campaigns
-  without control episodes
-
-The page offers three views based on those campaign scores.
-
-- **By attacker** ranks frameworks by the mean of their application scores,
-  giving each covered application equal weight. It shows scenario coverage and
-  the number of scored repeats per covered scenario. A range indicates that
-  scenarios have different counts.
-- **By application** ranks frameworks by the mean of their scenario scores on
-  that application. Each scenario score averages its completed episodes across
-  campaign files. Expand an application to see each framework's scenario scores.
-- **Submissions** shows the individual campaign scores and configurations for
-  each application.
+The original 40 application-level submissions remain available at their
+original paths. `data/legacy-repeats.json` maps each application's Oracle
+episode identities (`runId`, `episodeId`, `closedAt`) to the repeat label
+recorded in the pinned experiment archive. The merger uses the labels to
+reconstruct the initial 12 rounds.

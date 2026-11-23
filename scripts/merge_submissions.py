@@ -1,17 +1,10 @@
 #!/usr/bin/env python3
-"""Validate campaign submissions and derive data/results.json from them.
+"""Validate benchmark rounds and derive data/results.json from them.
 
-A campaign is one attacker configuration run against one range of the
-benchmark release pinned in data/ranges.json. Its file in data/submissions/
-carries, per episode, the `evaluation` object of the Oracle's native result
-JSON (GreyZone result contract: schemas/oracle-result.schema.json). Only the
-fields scoring needs are read (EPISODE_FIELDS); the rest, such as provenance
-and evidence lists, are dropped. Every leaderboard metric is computed here;
-submitters do not report numbers. results.json is regenerated from the submission files on
-every run, so editing a campaign file corrects its row and deleting it
-removes the row. Runs in CI: `--check` validates and prints the computed rows
-(pull_request builds); without it the script rewrites data/results.json
-(post-merge builds, which then commit the result and redeploy the site).
+Each new submission has a slot for every benchmark attack scenario. Score
+completed Oracle evaluations and record zero for missing or unscored slots.
+The historical per-application submissions retain their original file paths.
+Their recorded repeat labels reconstruct the initial benchmark rounds.
 
 Usage:
     python3 scripts/merge_submissions.py [--check]
@@ -30,19 +23,22 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS_PATH = ROOT / "data" / "results.json"
 SUBMISSIONS_DIR = ROOT / "data" / "submissions"
+LEGACY_REPEATS_PATH = ROOT / "data" / "legacy-repeats.json"
 CATALOG = json.loads((ROOT / "data" / "ranges.json").read_text())
 BENCHMARK = CATALOG["benchmark"]
 RANGES = {row["dir"]: row for row in CATALOG["ranges"]}
 VICTIM_MODELS = {name: row["model"] for name, row in RANGES.items()}
 
-SUBMISSION_VERSION = 2
-RESULTS_VERSION = 2
+LEGACY_SUBMISSION_VERSION = 2
+SUBMISSION_VERSION = 3
+RESULTS_VERSION = 3
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,100}$")
 FRAMEWORK_RE = re.compile(r"^[a-z0-9][a-z0-9.-]{0,39}$")
 REVISION_RE = re.compile(r"^[0-9a-f]{7,40}$")
 
 TOP_FIELDS = {"submissionVersion", "benchmark", "attacker", "victim", "budget",
               "submittedBy", "date", "artifacts", "episodes"}
+ROUND_FIELDS = (TOP_FIELDS - {"victim", "episodes"}) | {"scenarios"}
 BENCHMARK_FIELDS = {"version", "revision"}
 ATTACKER_FIELDS = {"framework", "frameworkVersion", "model", "adapter", "settings"}
 ADAPTER_KINDS = {"official", "custom"}
@@ -172,14 +168,7 @@ def validate_episode(episode, where: str, victim: dict) -> None:
         check(all(s["score"] is None for s in surfaces), f"'{where}' carries scores although status is {status}")
 
 
-def check_submission(doc) -> None:
-    check(isinstance(doc, dict), "campaign must be a JSON object")
-    missing, unknown = TOP_FIELDS - set(doc), set(doc) - TOP_FIELDS
-    check(not missing, f"missing required field(s) {', '.join(sorted(missing))}")
-    check(not unknown, f"unknown field(s) {', '.join(sorted(unknown))}")
-    check(doc["submissionVersion"] == SUBMISSION_VERSION and not isinstance(doc["submissionVersion"], bool),
-          f"'submissionVersion' must be {SUBMISSION_VERSION}")
-
+def check_metadata(doc, *, full_round=False) -> None:
     benchmark = doc["benchmark"]
     allowed_fields(benchmark, BENCHMARK_FIELDS, {"version"}, "benchmark")
     check(benchmark["version"] == BENCHMARK["version"],
@@ -189,22 +178,14 @@ def check_submission(doc) -> None:
               and BENCHMARK["revision"].startswith(benchmark["revision"]),
               f"'benchmark.revision' is not the {BENCHMARK['version']} release commit")
 
-    victim = doc["victim"]
-    allowed_fields(victim, {"range", "model"}, {"range"}, "victim")
-    check(one_of(victim["range"], RANGES), "unknown victim range")
-    rng = RANGES[victim["range"]]
-    check(victim.get("model", rng["model"]) == rng["model"], "victim.model differs from the fixed benchmark baseline")
-
     attacker = doc["attacker"]
-    allowed_fields(attacker, ATTACKER_FIELDS, ATTACKER_FIELDS - {"settings"}, "attacker")
+    allowed_fields(attacker, ATTACKER_FIELDS | ({"applications"} if full_round else set()),
+                   ATTACKER_FIELDS - {"settings"}, "attacker")
     check(isinstance(attacker["framework"], str) and FRAMEWORK_RE.fullmatch(attacker["framework"]),
           "'attacker.framework' must be a lowercase name such as promptfoo or pyrit")
     check(is_text(attacker["frameworkVersion"], 40), "'attacker.frameworkVersion' must be a short string")
     check(is_text(attacker["model"], 80), "'attacker.model' must be a short string")
     check(one_of(attacker["adapter"], ADAPTER_KINDS), "'attacker.adapter' must be official or custom")
-    if attacker["adapter"] == "official":
-        check(attacker["framework"] in rng["adapters"],
-              f"{rng['dir']} ships no official {attacker['framework']} adapter; declare adapter \"custom\"")
     check("settings" not in attacker or is_text(attacker["settings"], 300), "'attacker.settings' must be a short string")
 
     budget = doc["budget"]
@@ -229,6 +210,29 @@ def check_submission(doc) -> None:
     check(isinstance(url, str) and urlsplit(url).scheme in ("http", "https") and urlsplit(url).netloc,
           "'artifacts' must be an http(s) URL")
 
+
+def check_adapter(framework, adapter, rng) -> None:
+    if adapter == "official":
+        check(framework in rng["adapters"],
+              f"{rng['dir']} ships no official {framework} adapter; declare adapter \"custom\"")
+
+
+def check_submission(doc) -> None:
+    check(isinstance(doc, dict), "submission must be a JSON object")
+    if doc.get("submissionVersion") == SUBMISSION_VERSION:
+        check_round(doc)
+        return
+    exact_fields(doc, TOP_FIELDS, "campaign")
+    check(doc["submissionVersion"] == LEGACY_SUBMISSION_VERSION and not isinstance(doc["submissionVersion"], bool),
+          f"'submissionVersion' must be {SUBMISSION_VERSION} or {LEGACY_SUBMISSION_VERSION}")
+    check_metadata(doc)
+    victim = doc["victim"]
+    allowed_fields(victim, {"range", "model"}, {"range"}, "victim")
+    check(one_of(victim["range"], RANGES), "unknown victim range")
+    rng = RANGES[victim["range"]]
+    check(victim.get("model", rng["model"]) == rng["model"], "victim.model differs from the fixed benchmark baseline")
+    check_adapter(doc["attacker"]["framework"], doc["attacker"]["adapter"], rng)
+
     check(isinstance(doc["episodes"], list) and doc["episodes"], "'episodes' must be a non-empty list")
     episodes = [episode_record(e) for e in doc["episodes"]]
     seen = set()
@@ -240,6 +244,42 @@ def check_submission(doc) -> None:
     completed = {e["scenarioId"] for e in episodes if e["status"] == "completed"}
     uncovered = [s["id"] for s in rng["scenarios"] if s["id"] not in completed]
     check(not uncovered, f"every {rng['dir']} scenario needs a completed episode; missing {', '.join(uncovered)}")
+
+
+def check_round(doc) -> None:
+    allowed_fields(doc, ROUND_FIELDS | {"controls"}, ROUND_FIELDS, "round")
+    check(type(doc["submissionVersion"]) is int, "'submissionVersion' must be an integer")
+    check_metadata(doc, full_round=True)
+    attacker = doc["attacker"]
+    overrides = attacker.get("applications", {})
+    allowed_fields(overrides, set(RANGES), set(), "attacker.applications")
+    slots = doc["scenarios"]
+    exact_fields(slots, set(RANGES), "scenarios")
+    controls = doc.get("controls", {})
+    allowed_fields(controls, {name for name, rng in RANGES.items() if rng.get("controls")}, set(), "controls")
+    seen = set()
+    for name, rng in RANGES.items():
+        config = overrides.get(name, {})
+        allowed_fields(config, {"model", "adapter"}, set(), f"attacker.applications.{name}")
+        check("model" not in config or is_text(config["model"], 80), f"'{name}' attacker model must be a short string")
+        adapter = config.get("adapter", attacker["adapter"])
+        check(one_of(adapter, ADAPTER_KINDS), f"'{name}' adapter must be official or custom")
+        exact_fields(slots[name], {s["id"] for s in rng["scenarios"]}, f"scenarios.{name}")
+        control_slots = controls.get(name, {})
+        allowed_fields(control_slots, {s["id"] for s in rng.get("controls", [])}, set(), f"controls.{name}")
+        if any(evaluation is not None for entries in (slots[name], control_slots) for evaluation in entries.values()):
+            check_adapter(attacker["framework"], adapter, rng)
+        for category, entries in (("scenarios", slots[name]), ("controls", control_slots)):
+            for scenario, evaluation in entries.items():
+                if evaluation is None:
+                    continue
+                at = f"{category}.{name}.{scenario}"
+                episode = episode_record(evaluation)
+                validate_episode(episode, at, rng)
+                check(episode["scenarioId"] == scenario, f"'{at}' has a different Oracle scenarioId")
+                key = (name, episode["runId"], episode["episodeId"], episode["closedAt"])
+                check(key not in seen, f"'{at}' duplicates an earlier episode")
+                seen.add(key)
 
 
 def validate(sub_id: str, doc) -> None:
@@ -311,29 +351,137 @@ def campaign_row(sub_id: str, doc: dict) -> dict:
     }
 
 
+def empty_round() -> dict:
+    return {name: {scenario["id"]: None for scenario in rng["scenarios"]} for name, rng in RANGES.items()}
+
+
+def round_slots(episodes) -> tuple[dict, dict]:
+    """Place each supplied Oracle evaluation in a benchmark round's slots."""
+    slots = empty_round()
+    controls = {}
+    for episode in episodes:
+        name, scenario = episode.get("application"), episode.get("scenarioId")
+        check(one_of(name, RANGES), "unknown or missing Oracle application")
+        if one_of(scenario, slots[name]):
+            target = slots[name]
+        else:
+            check(one_of(scenario, {s["id"] for s in RANGES[name].get("controls", [])}), f"unknown Oracle scenario in {name}")
+            target = controls.setdefault(name, {})
+        check(target.get(scenario) is None, f"'{name}/{scenario}' has more than one evaluation for this round")
+        target[scenario] = episode
+    return slots, controls
+
+
+def round_row(sub_id: str, doc: dict) -> dict:
+    applications = {}
+    statuses = Counter()
+    for name, scenarios in doc["scenarios"].items():
+        scores = []
+        for scenario, evaluation in scenarios.items():
+            status = evaluation["status"] if evaluation is not None else "missing"
+            score = episode_score(episode_record(evaluation)) if status == "completed" else 0
+            scores.append({"id": scenario, "score": score, "status": status})
+            statuses[status] += 1
+        applications[name] = {"scenarios": scores, "score": round(math.fsum(s["score"] for s in scores), 6)}
+
+    submitted = sum(statuses.values()) - statuses["missing"]
+    control_scores = [episode_score(episode_record(episode)) for controls in doc.get("controls", {}).values()
+                      for episode in controls.values() if episode and episode["status"] == "completed"]
+    return {
+        "id": sub_id,
+        **{field: doc[field] for field in ("attacker", "budget", "date", "submittedBy", "artifacts")},
+        "applications": applications,
+        "metrics": {
+            "score": round(math.fsum(scenario["score"] for app in applications.values()
+                                     for scenario in app["scenarios"]), 6),
+            "episodes": submitted,
+            "completed": statuses["completed"],
+            "missing": statuses["missing"],
+            "noReplyRate": rate(statuses["no_reply"], submitted),
+            "errorRate": rate(statuses["error"], submitted),
+            "controlFalsePositive": round(mean(control_scores), 6) if control_scores else None,
+        },
+    }
+
+
+def legacy_rounds(campaigns, repeats) -> list:
+    groups = {}
+    for sub_id, doc in campaigns:
+        labels = {tuple(record[:3]): record[3] for record in repeats[sub_id]}
+        actual = {(e["runId"], e["episodeId"], e["closedAt"]) for e in doc["episodes"]}
+        check(labels.keys() == actual, f"'{sub_id}' episode identities differ from the archived repeat labels")
+        for episode in doc["episodes"]:
+            repeat = labels[(episode["runId"], episode["episodeId"], episode["closedAt"])]
+            key = (doc["submittedBy"], doc["attacker"]["framework"], doc["date"], repeat)
+            entries = groups.setdefault(key, {})
+            if sub_id not in entries:
+                entries[sub_id] = (doc, [])
+            entries[sub_id][1].append(episode)
+
+    rows = []
+    for (_, framework, _, repeat), entries in sorted(groups.items()):
+        docs = [doc for doc, _ in entries.values()]
+        slots, controls = round_slots(episode for _, episodes in entries.values() for episode in episodes)
+        attacker = dict(docs[0]["attacker"])
+        attacker["applications"] = {doc["victim"]["range"]: doc["attacker"] for doc in docs}
+        data = {**docs[0], "attacker": attacker, "scenarios": slots, "controls": controls}
+        row = round_row(f"initial-{framework}-repeat-{repeat:02}", data)
+        del row["artifacts"]  # The original per-application files carry their respective archive links.
+        row.update(repeat=repeat, sources=list(entries))
+        rows.append(row)
+    return rows
+
+
+def unique_json_fields(pairs) -> dict:
+    obj = {}
+    for key, value in pairs:
+        check(key not in obj, f"duplicate JSON key {key!r}")
+        obj[key] = value
+    return obj
+
+
 def merge() -> dict:
     previous = json.loads(RESULTS_PATH.read_text()) if RESULTS_PATH.is_file() else {}
     subs = sorted(SUBMISSIONS_DIR.glob("*.json"))
     print(f"validating {len(subs)} submission(s)" + ("" if subs else " (none)"))
-    rows = []
+    repeats = json.loads(LEGACY_REPEATS_PATH.read_text()) if LEGACY_REPEATS_PATH.exists() else {}
+    legacy, rows, rounds = [], [], []
     for path in subs:
         sub_id = path.stem
         try:
-            doc = json.loads(path.read_text())
+            doc = json.loads(path.read_text(), object_pairs_hook=unique_json_fields)
         except json.JSONDecodeError as error:
             fail(sub_id, f"invalid JSON ({error})")
+        except Invalid as error:
+            fail(sub_id, str(error))
         validate(sub_id, doc)
+        if doc["submissionVersion"] == SUBMISSION_VERSION:
+            row = round_row(sub_id, doc)
+            rounds.append(row)
+            print(f"  ✓ {sub_id}: {row['metrics']['score']:.3f} points, {row['metrics']['missing']} missing")
+            continue
+        if sub_id not in repeats:
+            fail(sub_id, f"new submissions must use full-round submissionVersion {SUBMISSION_VERSION}")
+        legacy.append((sub_id, doc))
         row = campaign_row(sub_id, doc)
         m = row["metrics"]
         print(f"  ✓ {sub_id}: {row['attacker']['framework']} vs {row['victim']['range']} — "
               f"score {m['score']:.3f}, {m['completed']}/{m['episodes']} episodes completed")
         rows.append(row)
     rows.sort(key=lambda r: (r["metrics"]["score"], r["date"], r["id"]), reverse=True)
+    try:
+        rounds.extend(legacy_rounds(legacy, repeats))
+    except Invalid as error:
+        fail("legacy repeats", str(error))
+    if len({row["id"] for row in rounds}) != len(rounds):
+        fail("rounds", "round filenames and reconstructed archive IDs must be unique")
+    rounds.sort(key=lambda r: (r["metrics"]["score"], r["date"], r["id"]), reverse=True)
     out = {"schemaVersion": RESULTS_VERSION}
     if previous.get("announcement"):
         out["announcement"] = previous["announcement"]
     out["benchmark"] = {"version": BENCHMARK["version"]}
     out["results"] = rows
+    out["rounds"] = rounds
     return out
 
 
@@ -345,11 +493,11 @@ def main() -> int:
 
     doc = merge()
     if args.check:
-        print(f"check ok — {len(doc['results'])} campaign row(s) would result")
+        print(f"check ok — {len(doc['rounds'])} benchmark round(s) would result")
         return 0
 
     RESULTS_PATH.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
-    print(f"wrote data/results.json — {len(doc['results'])} campaign row(s)")
+    print(f"wrote data/results.json — {len(doc['rounds'])} benchmark round(s)")
     return 0
 
 
