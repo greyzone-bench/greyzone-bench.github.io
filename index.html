@@ -99,18 +99,20 @@
   }
   .header-sub em { font-style: normal; font-weight: 600; color: var(--header-cream); }
   .hero-links { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.25rem; }
-  .hero-links a, .hero-links button {
-    display: inline-flex; align-items: center; gap: 0.4rem;
-    padding: 0.45rem 1.1rem;
-    border: 1px solid rgba(255, 247, 236, 0.5);
-    border-radius: var(--radius-full);
-    background: rgba(0, 0, 0, 0.14);
-    color: var(--header-cream);
-    font-size: 0.875rem; font-weight: 600;
-    transition: background 0.1s ease, border-color 0.1s ease;
+  .hero-links > :is(a, button) {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 8rem; min-height: 3.125rem;
+    padding: 0.75rem 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: var(--radius-xl);
+    background-color: #123465;
+    color: #fff;
+    font: inherit; font-size: 1.125rem; font-weight: 600; line-height: 1.25;
+    transition: background-color 0.15s ease;
   }
-  .hero-links a:hover, .hero-links button:hover { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 247, 236, 0.8); color: #fff; }
-  .hero-links button { font-family: inherit; line-height: inherit; cursor: pointer; }
+  .hero-links > :is(a, button):hover { background-color: #19467f; }
+  .hero-links > :is(a, button):focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  .hero-links button { cursor: pointer; }
   .stats { display: flex; flex-wrap: wrap; gap: 2.25rem; margin-top: 1.5rem; }
   .stat b {
     display: block;
@@ -183,24 +185,6 @@
   .video-thumb .play circle { fill: rgba(17, 24, 39, 0.72); transition: fill 0.1s ease; }
   .video-thumb .play path { fill: #fff; }
   .paper-preview:hover .play circle { fill: var(--accent); }
-  button.paper-preview {
-    padding: 0; border: 0; background: none; cursor: pointer;
-    font: inherit; font-weight: 600; color: var(--accent);
-  }
-  button.paper-preview:hover { color: var(--blue-700); }
-  button.paper-preview:focus-visible { outline: 2px solid var(--blue-400); outline-offset: 4px; border-radius: var(--radius-lg); }
-  .cite-tile {
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem;
-    width: 200px; max-width: 100%; aspect-ratio: 5 / 2;
-    border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, var(--header-blue), var(--blue-700));
-    color: #fff;
-    box-shadow: var(--card-shadow);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-  }
-  button.paper-preview:hover .cite-tile { transform: translateY(-2px); box-shadow: var(--card-shadow-hover); }
-  .cite-tile svg { width: 32px; height: 32px; fill: currentColor; }
-  .cite-tile small { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.9; }
   .video-duration {
     position: absolute; right: 6px; bottom: 6px;
     padding: 0 0.35rem; border-radius: 4px;
@@ -455,6 +439,10 @@
     .page-header h1 { font-size: 1.5rem; }
     .container { padding: 0 16px; }
   }
+  @media (max-width: 600px) {
+    .hero-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .hero-links > :is(a, button) { min-width: 0; padding-inline: 0.75rem; }
+  }
 </style>
 </head>
 <body>
@@ -501,13 +489,6 @@
           <img src="assets/paper-first-page.png" alt="First page of the GreyZone paper" width="1080" height="1600">
           <span>Read the paper on arXiv</span>
         </a>
-        <button type="button" class="paper-preview" id="cite-card" title="Copy the BibTeX citation">
-          <span class="cite-tile" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/></svg>
-            <small>BibTeX</small>
-          </span>
-          <span class="cite-label" aria-live="polite">Cite this paper</span>
-        </button>
         <a class="paper-preview" href="assets/greyzone-voiceover.mp4" target="_blank" rel="noopener">
           <span class="video-thumb">
             <img src="assets/greyzone-video-thumb.jpg" alt="Title slide of the GreyZone video" width="640" height="360">
@@ -936,25 +917,23 @@ function renderSubmitLinks(ranges) {
   document.querySelectorAll("a[data-submit]").forEach(a => { a.href = url; });
 }
 
-/* ---------- cite buttons: copy the footer BibTeX ---------- */
-async function copyCitation(label, idle, done) {
+/* ---------- cite button: copy the footer BibTeX ---------- */
+const citeButton = document.getElementById("cite-btn");
+let citeResetTimer;
+citeButton.addEventListener("click", async () => {
   const bibtex = document.getElementById("bibtex");
   try {
     await navigator.clipboard.writeText(bibtex.textContent);
-    label.textContent = done;
-    clearTimeout(label.resetTimer);
-    label.resetTimer = setTimeout(() => { label.textContent = idle; }, 1600);
+    citeButton.textContent = "Copied ✓";
+    clearTimeout(citeResetTimer);
+    citeResetTimer = setTimeout(() => { citeButton.textContent = "Cite"; }, 1600);
   } catch {
     // Clipboard unavailable (blocked or insecure context): show the entry instead.
     const box = bibtex.closest("details");
     box.open = true;
     box.scrollIntoView({ behavior: "smooth", block: "center" });
   }
-}
-const citeButton = document.getElementById("cite-btn");
-citeButton.addEventListener("click", () => copyCitation(citeButton, "Cite", "Copied ✓"));
-const citeCardLabel = document.querySelector("#cite-card .cite-label");
-document.getElementById("cite-card").addEventListener("click", () => copyCitation(citeCardLabel, "Cite this paper", "BibTeX copied ✓"));
+});
 
 /* ---------- header stats (derived from ranges.json at boot) ---------- */
 function renderStats(d) {
