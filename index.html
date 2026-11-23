@@ -216,7 +216,20 @@
   }
 
   /* ---------- results controls ---------- */
-  .results-controls { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; }
+  .results-controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.85rem; }
+  .results-tabs {
+    display: inline-flex; gap: 0.25rem; padding: 0.25rem;
+    border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--gray-100);
+  }
+  .results-tabs [role="tab"] {
+    padding: 0.55rem 0.9rem; border: 0; border-radius: var(--radius-lg); background: transparent;
+    color: var(--text-secondary); font: inherit; font-size: 0.9375rem; font-weight: 600; cursor: pointer;
+  }
+  .results-tabs [aria-selected="true"] { background: #fff; color: var(--blue-700); box-shadow: 0 1px 3px #11182718; }
+  .results-tabs [aria-selected="false"]:hover { color: var(--blue-700); }
+  .results-tabs button:focus-visible, .sort-button:focus-visible, .tool-toggle:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
   .range-filter[hidden] { display: none; }
   .range-filter {
     display: inline-flex; align-items: center; gap: 0.5rem;
@@ -272,16 +285,27 @@
   #ranges-table { min-width: 60rem; }
 
   /* results cells */
+  #results-table { background: #fff; }
+  #results-head th { font-size: 0.8125rem; letter-spacing: 0; text-transform: none; }
+  .sort-button {
+    padding: 0; border: 0; background: none; color: inherit; cursor: pointer;
+    font: inherit; text-align: inherit;
+  }
+  #results-body > tr:not(.group-row, .round-detail-row, .no-results) > td { padding: 0.85rem 1rem; font-size: 1rem; }
   .rank { color: var(--text-muted); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
-  .framework { font-weight: 500; font-size: 0.9375rem; color: var(--text); }
-  .model { font-size: 0.8125rem; color: var(--text-muted); }
+  .framework { font-weight: 650; font-size: 1.0625rem; color: var(--text); }
+  .tool-version { display: block; margin-top: 0.1rem; color: var(--text-muted); font: 0.8125rem/1.4 var(--mono); overflow-wrap: anywhere; }
+  .attacker-model { color: var(--text-secondary); overflow-wrap: anywhere; }
+  .compact-model { display: none; }
+  .best-score { color: var(--text-secondary); font-weight: 600; white-space: nowrap; }
   .meter { display: inline-block; width: 100px; text-align: right; vertical-align: middle; }
   .meter-val {
     display: block;
-    font-size: 0.9375rem; font-weight: 600; line-height: 1.25;
+    font-size: 1.125rem; font-weight: 700; line-height: 1.25; white-space: nowrap;
     font-variant-numeric: tabular-nums; font-feature-settings: 'tnum';
     color: var(--text);
   }
+  .meter-limit { color: var(--text-muted); font-size: 0.8125rem; font-weight: 500; }
   .meter-track {
     display: block; height: 4px; margin-top: 5px;
     border-radius: var(--radius-full);
@@ -319,8 +343,23 @@
     overflow-wrap: anywhere;
   }
   .scenario-scores tr:last-child th[scope="row"] { border-bottom: none; }
-  .attacker-rounds ul { margin: 0.45rem 0 0; padding-left: 1rem; line-height: 1.65; }
-  .attacker-rounds li strong { font-variant-numeric: tabular-nums; }
+  .tool-toggle {
+    display: inline-flex; align-items: baseline; gap: 0.45rem; padding: 0; border: 0;
+    background: none; font: inherit; text-align: left; cursor: pointer;
+  }
+  .tool-toggle:hover .framework { color: var(--blue-700); }
+  .tool-toggle::before { content: "▸"; color: var(--accent); }
+  .tool-toggle[aria-expanded="true"]::before { content: "▾"; }
+  .round-detail-row > td { background: var(--blue-50); padding: 0.85rem 1rem; }
+  .round-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); align-items: start; gap: 0.65rem; }
+  .round-card { padding: 0.8rem; border: 1px solid var(--border); border-radius: var(--radius-lg); background: #fff; }
+  .round-card-head { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.9375rem; }
+  .round-card-head strong:last-child { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .round-card p, .round-card details { margin: 0.35rem 0 0; color: var(--text-secondary); font-size: 0.8125rem; }
+  .round-card dl { margin: 0.35rem 0 0; }
+  .round-card dt { margin-top: 0.4rem; font-weight: 600; overflow-wrap: anywhere; }
+  .round-card dd { margin: 0; overflow-wrap: anywhere; }
+  .round-card code { overflow-wrap: anywhere; }
   .cta { font-weight: 500; }
 
   /* ranges cells */
@@ -442,6 +481,15 @@
   @media (max-width: 600px) {
     .hero-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .hero-links > :is(a, button) { min-width: 0; padding-inline: 0.75rem; }
+    .results-tabs { width: 100%; }
+    .results-tabs [role="tab"] { flex: 1; padding-inline: 0.3rem; font-size: 0.875rem; }
+    #results-head th { padding-inline: 0.375rem; white-space: normal; }
+    #results-body > tr:not(.group-row, .round-detail-row, .no-results) > td { padding-inline: 0.375rem; }
+    #results-table[data-view="attacker"] .compact-hidden { display: none; }
+    #results-table:is([data-view="attacker"], [data-view="application"]) .model-column { display: none; }
+    .compact-model { display: block; margin-top: 0.2rem; font-size: 0.8125rem; line-height: 1.4; }
+    .compact-model > span { display: inline-block; max-width: 100%; }
+    .meter { width: auto; }
   }
 </style>
 </head>
@@ -527,39 +575,39 @@
         <h2>Results<span class="count" id="result-count"></span></h2>
         <p class="sub">Attacker rankings and benchmark rounds on <span id="bench-version">GreyZone v1.0.1</span>.</p>
       </div>
-      <div class="results-controls">
-        <label class="range-filter">View
-          <select id="results-view" aria-controls="results-table">
-            <option value="attacker">By attacker</option>
-            <option value="application">By application</option>
-            <option value="submissions">By round</option>
-          </select>
-        </label>
-        <label class="range-filter" id="range-control" hidden>Application
-          <select id="range-filter" aria-controls="results-table"><option value="all">All applications</option></select>
-        </label>
+    </div>
+    <div class="results-controls">
+      <div class="results-tabs" id="results-tabs" role="tablist" aria-label="Results views">
+        <button type="button" role="tab" id="attacker-tab" data-view="attacker" aria-controls="results-panel" aria-selected="true">By attacker</button>
+        <button type="button" role="tab" id="application-tab" data-view="application" aria-controls="results-panel" aria-selected="false" tabindex="-1">By application</button>
+        <button type="button" role="tab" id="submissions-tab" data-view="submissions" aria-controls="results-panel" aria-selected="false" tabindex="-1">By round</button>
       </div>
+      <label class="range-filter" id="range-control" hidden>Application
+        <select id="range-filter" aria-controls="results-table"><option value="all">All applications</option></select>
+      </label>
     </div>
 
-    <div class="table-card">
-      <table id="results-table">
-        <thead><tr id="results-head"></tr></thead>
-        <tbody id="results-body"></tbody>
-      </table>
-    </div>
+    <div id="results-panel" role="tabpanel" aria-labelledby="attacker-tab">
+      <div class="table-card">
+        <table id="results-table">
+          <thead><tr id="results-head"></tr></thead>
+          <tbody id="results-body"></tbody>
+        </table>
+      </div>
 
-    <p class="legend" id="attacker-legend">
-      <b>Average score</b> — the mean of the framework's round totals. Expand an attacker to see each numbered round. Missing and unscored scenarios contribute zero.
-    </p>
-    <p class="legend" id="application-legend" hidden>
-      <b>Average score</b> — the mean of the framework's application subtotals across benchmark rounds. Expand an application to see the average for each scenario.
-    </p>
-    <p class="legend" id="submissions-legend" hidden>
-      <b>Score</b> — points summed across all benchmark attack scenarios in one round. Each completed episode contributes its highest in-scope Oracle score. Missing, <code>no_reply</code>, and <code>error</code> slots contribute zero.
-      <b>No-reply</b> / <b>Error</b> — shares of submitted attack episodes with status <code>no_reply</code> / <code>error</code>. These episodes are reported separately from Score.
-      <b>Control&nbsp;FP</b> — mean score of completed episodes from kubectl-ai's optional benign <code>control</code> (0 is healthy). Displays — when no completed control episodes are submitted.
-      <b>Direct turns</b> / <b>Indirect turns</b> — attack messages allowed per episode for each injection type, including the first.
-    </p>
+      <p class="legend" id="attacker-legend">
+        <b>Average score</b> is the mean of the tool's round totals. <b>Best round</b> is its highest single-round score. Select a tool to see each round's version and models.
+      </p>
+      <p class="legend" id="application-legend" hidden>
+        <b>Average score</b> — the mean of the framework's application subtotals across benchmark rounds. Expand an application to see the average for each scenario.
+      </p>
+      <p class="legend" id="submissions-legend" hidden>
+        <b>Score</b> — points summed across all benchmark attack scenarios in one round. Each completed episode contributes its highest in-scope Oracle score. Missing, <code>no_reply</code>, and <code>error</code> slots contribute zero.
+        <b>No-reply</b> / <b>Error</b> — shares of submitted attack episodes with status <code>no_reply</code> / <code>error</code>. These episodes are reported separately from Score.
+        <b>Control&nbsp;FP</b> — mean score of completed episodes from kubectl-ai's optional benign <code>control</code> (0 is healthy). Displays — when no completed control episodes are submitted.
+        <b>Direct turns</b> / <b>Indirect turns</b> — attack messages allowed per episode for each injection type, including the first.
+      </p>
+    </div>
   </section>
 
   <!-- ================= TAXONOMY ================= -->
@@ -668,8 +716,11 @@ function renderBanner(data) {
 /* ---------- results table ---------- */
 const M = r => r.metrics;
 const ATTACKER = { key: "attacker.framework", label: "Attacker",
-  render: r => `<span class="nowrap" title="${esc(r.attacker.settings)}"><span class="framework">${esc(r.attacker.framework)}</span> <span class="model">${esc(r.attacker.frameworkVersion)}</span><br><span class="model">${r.attacker.applications ? "Per-application configuration" : esc(r.attacker.model)}</span></span>`,
+  render: r => `<span title="${esc(r.attacker.settings)}"><span class="framework">${esc(r.attacker.framework)}</span><span class="tool-version">${esc(r.attacker.frameworkVersion)}</span></span>`,
   sort: r => r.attacker.framework };
+const modelText = r => r.modelNames.join(", ");
+const MODELS = { key: "models", label: "Attacker model", cls: "model-column",
+  render: r => `<span class="attacker-model">${esc(modelText(r))}</span>`, sort: modelText };
 const TURN_BUDGETS = [["direct", "Direct turns"], ["indirect", "Indirect turns"]].map(([mode, label]) => {
   const limit = r => {
     const turns = r.budget.maxTurns;
@@ -686,18 +737,19 @@ const METRICS = [
   ...TURN_BUDGETS,
   { key: "date",        label: "Date", render: r => `<span class="nowrap">${esc(r.date)}</span>`, sort: r => r.date, cls: "hide-sm" },
 ];
-const RANK = { key: "rank", label: "#", num: true, render: () => "", sort: null };
+const RANK = { key: "rank", label: "#", num: true, cls: "compact-hidden", render: () => "", sort: null };
+const compactModel = r => `<span class="attacker-model compact-model">${r.modelNames.map(name => `<span>${esc(name)}</span>`).join(", ")}</span>`;
 const FRAMEWORK = { key: "framework", label: "Attacker",
-  render: r => `<span class="framework">${esc(r.framework)}</span>`, sort: r => r.framework };
-const FRAMEWORK_ROUNDS = { ...FRAMEWORK, render: r => {
-  const showSubmitter = new Set(r.rounds.map(round => round.submittedBy)).size > 1;
-  const scores = r.rounds.map(round => `<li>Round ${round.repeat} <strong>${M(round).score.toFixed(2)} / ${r.maxScore}</strong>${
-    showSubmitter ? ` <span class="model">${esc(round.submittedBy)}</span>` : ""}</li>`).join("");
-  return `<details class="attacker-rounds" data-attacker="${esc(r.framework)}"${openAttackers.has(r.framework) ? " open" : ""}>
-    <summary>${FRAMEWORK.render(r)}</summary><ul>${scores}</ul></details>`;
-} };
+  render: r => `<span class="framework">${esc(r.framework)}</span>${compactModel(r)}`, sort: r => r.framework };
+const FRAMEWORK_ROUNDS = { ...FRAMEWORK,
+  render: r => `<button type="button" class="tool-toggle" data-tool="${esc(r.framework)}"
+      aria-expanded="${openAttackers.has(r.framework)}" aria-controls="tool-rounds-${esc(r.framework)}">
+    <span><span class="framework">${esc(r.framework)}</span><span class="tool-version">${esc(r.versions.join(", "))}</span>${compactModel(r)}</span>
+  </button>` };
 const AVERAGE = { key: "score", label: "Average score", num: true, render: r => meter(r.score, r.maxScore), sort: r => r.score };
-const REPEATS = { key: "repeats", label: "Rounds", num: true, render: r => r.roundCount, sort: r => r.roundCount };
+const BEST = { key: "best", label: "Best round", num: true,
+  render: r => `<span class="best-score">${scoreLabel(r.bestScore, r.maxScore)}</span>`, sort: r => r.bestScore };
+const REPEATS = { key: "repeats", label: "Rounds", num: true, cls: "compact-hidden", render: r => r.roundCount, sort: r => r.roundCount };
 const ROUND = { key: "repeat", label: "Round", num: true, render: r => r.repeat, sort: r => r.repeat };
 const SUBMITTER = { key: "submitter", label: "Submitter", render: r => esc(r.submittedBy), sort: r => r.submittedBy, cls: "hide-sm" };
 const SUBMISSION = { key: "id", label: "Source files",
@@ -705,11 +757,12 @@ const SUBMISSION = { key: "id", label: "Source files",
     ? `<details><summary>Archive files</summary>${r.sources.map(id => `<div><a href="data/submissions/${encodeURIComponent(id)}.json">${esc(id)}</a></div>`).join("")}</details>`
     : `<a href="data/submissions/${encodeURIComponent(r.id)}.json">${esc(r.id)}</a>`, sort: r => r.id };
 const VIEWS = {
-  attacker: [RANK, FRAMEWORK_ROUNDS, AVERAGE, REPEATS],
-  application: [RANK, FRAMEWORK, AVERAGE, REPEATS],
-  submissions: [RANK, ATTACKER, ROUND, ...METRICS, SUBMITTER, SUBMISSION],
+  attacker: [RANK, FRAMEWORK_ROUNDS, MODELS, AVERAGE, BEST, REPEATS],
+  application: [RANK, FRAMEWORK, MODELS, AVERAGE, REPEATS],
+  submissions: [RANK, ATTACKER, MODELS, ROUND, ...METRICS, SUBMITTER, SUBMISSION],
 };
 
+let currentView = "attacker";
 let currentRange = "all";
 let sortKey = "score";
 let sortDir = -1;
@@ -720,13 +773,29 @@ let totalScenarios = 0;
 const openApplications = new Set();
 const openAttackers = new Set();
 
+function summarizeModels(ids) {
+  const labels = Array.from(ids, id => {
+    if (/^(?:openai\/)?gpt-4\.1-mini(?:-\d{4}-\d{2}-\d{2})?$/.test(id)) return "GPT-4.1 mini";
+    if (/^(?:anthropic\/)?claude-haiku-4-5(?:-\d{8})?$/.test(id)) return "Claude Haiku 4.5";
+    return id;
+  });
+  return [...new Set(labels)];
+}
+
+function withRoundModels(round) {
+  const modelsByApplication = Object.fromEntries(Object.keys(round.applications).map(name =>
+    [name, round.attacker.applications?.[name]?.model ?? round.attacker.model]));
+  return { ...round, modelsByApplication, modelNames: summarizeModels(Object.values(modelsByApplication)) };
+}
+
 function applicationAverages(rounds, name, maxScore) {
   const byFramework = new Map();
   for (const round of rounds) {
     const framework = round.attacker.framework;
-    if (!byFramework.has(framework)) byFramework.set(framework, { framework, scenarios: new Map(), score: 0, roundCount: 0, maxScore });
+    if (!byFramework.has(framework)) byFramework.set(framework, { framework, scenarios: new Map(), models: new Set(), score: 0, roundCount: 0, maxScore });
     const summary = byFramework.get(framework);
     const application = round.applications[name];
+    summary.models.add(round.modelsByApplication[name]);
     summary.roundCount += 1;
     summary.score += application.score;
     const { scenarios } = summary;
@@ -739,7 +808,7 @@ function applicationAverages(rounds, name, maxScore) {
   }
   return [...byFramework.values()].map(row => {
     for (const result of row.scenarios.values()) result.score /= row.roundCount;
-    return { ...row, score: row.score / row.roundCount };
+    return { ...row, score: row.score / row.roundCount, modelNames: summarizeModels(row.models) };
   });
 }
 
@@ -752,16 +821,23 @@ function attackerAverages(rounds) {
   }
   return [...byFramework].map(([framework, entries]) => {
     entries.sort((a, b) => a.submittedBy.localeCompare(b.submittedBy) || a.repeat - b.repeat);
-    const score = entries.reduce((sum, round) => sum + M(round).score, 0) / entries.length;
-    return { framework, rounds: entries, score, roundCount: entries.length, maxScore: totalScenarios };
+    const scores = entries.map(round => M(round).score);
+    return {
+      framework, rounds: entries, roundCount: entries.length, maxScore: totalScenarios,
+      score: scores.reduce((sum, score) => sum + score, 0) / scores.length,
+      bestScore: Math.max(...scores),
+      versions: [...new Set(entries.map(round => round.attacker.frameworkVersion))],
+      modelNames: summarizeModels(entries.flatMap(round => Object.values(round.modelsByApplication))),
+    };
   });
 }
 
 function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function pct(x) { return (x == null) ? "—" : (100 * x).toFixed(0) + "%"; }
+function scoreLabel(score, maxScore) { return score == null ? "—" : `${score.toFixed(2)} / ${maxScore}`; }
 function meter(x, maxScore) {
   const v = (x == null) ? 0 : Math.max(0, Math.min(1, x / maxScore));
-  const label = (x == null) ? "—" : `${x.toFixed(2)} / ${maxScore}`;
+  const label = x == null ? "—" : `${x.toFixed(2)} <span class="meter-limit">/ ${maxScore}</span>`;
   return `<span class="meter"><span class="meter-val">${label}</span>` +
          `<span class="meter-track"><span class="meter-fill" style="width:${(100 * v).toFixed(1)}%"></span></span></span>`;
 }
@@ -775,13 +851,33 @@ function compareBy(col) {
   };
 }
 
-function resultRows(rows, columns) {
+function attackerRoundDetails(row, columnCount) {
+  const showSubmitter = new Set(row.rounds.map(round => round.submittedBy)).size > 1;
+  const cards = row.rounds.map(round => {
+    const entries = Object.entries(round.modelsByApplication);
+    const models = [...new Set(entries.map(([, model]) => model))];
+    const modelInfo = models.length === 1
+      ? `<p>Model <code>${esc(models[0])}</code></p>`
+      : `<p>${esc(modelText(round))}</p><details><summary>Models by application</summary><dl>${entries.map(([name, model]) =>
+        `<dt>${esc(name)}</dt><dd><code>${esc(model)}</code></dd>`).join("")}</dl></details>`;
+    return `<div class="round-card">
+      <div class="round-card-head"><strong>Round ${round.repeat}</strong> <strong>${scoreLabel(M(round).score, row.maxScore)}</strong></div>
+      <p>Version <code>${esc(round.attacker.frameworkVersion)}</code>${showSubmitter ? ` · ${esc(round.submittedBy)}` : ""}</p>
+      ${modelInfo}
+    </div>`;
+  }).join("");
+  return `<tr class="round-detail-row" id="tool-rounds-${esc(row.framework)}"${openAttackers.has(row.framework) ? "" : " hidden"}>
+    <td colspan="${columnCount}"><div class="round-details" role="group" aria-label="Rounds for ${esc(row.framework)}">${cards}</div></td>
+  </tr>`;
+}
+
+function resultRows(rows, columns, showRoundDetails = false) {
   const col = columns.find(c => c.key === sortKey);
   return [...rows].sort(compareBy(col)).map((r, i) =>
     "<tr>" + columns.map(c => {
       const content = (c.key === "rank") ? `<span class="rank">${i + 1}</span>` : c.render(r);
       return `<td class="${c.num ? "num " : ""}${c.cls || ""}">${content}</td>`;
-    }).join("") + "</tr>"
+    }).join("") + "</tr>" + (showRoundDetails ? attackerRoundDetails(r, columns.length) : "")
   ).join("");
 }
 
@@ -814,18 +910,19 @@ function applicationGroup(name, application, columns) {
 }
 
 function renderResults() {
-  const view = document.getElementById("results-view").value;
+  const view = currentView;
   const columns = VIEWS[view];
   document.getElementById("results-table").dataset.view = view;
   document.getElementById("range-control").hidden = view !== "application";
   for (const name of Object.keys(VIEWS)) document.getElementById(`${name}-legend`).hidden = name !== view;
   const head = document.getElementById("results-head");
-  head.innerHTML = columns.map(c =>
-    `<th class="${c.num ? "num " : ""}${c.cls || ""}${c.sort ? " sortable" : " no-sort"}" ${c.sort ? `data-key="${c.key}"` : ""}>` +
-    esc(c.label) +
-    (c.key === sortKey ? `<span class="arrow">${sortDir < 0 ? "▾" : "▴"}</span>` : "") +
-    `</th>`
-  ).join("");
+  head.innerHTML = columns.map(c => {
+    const active = c.key === sortKey;
+    const arrow = active ? `<span class="arrow" aria-hidden="true">${sortDir < 0 ? "▾" : "▴"}</span>` : "";
+    const label = c.sort ? `<button type="button" class="sort-button">${esc(c.label)}${arrow}</button>` : esc(c.label);
+    return `<th scope="col" class="${c.num ? "num " : ""}${c.cls || ""}${c.sort ? " sortable" : ""}"
+      ${c.sort ? `data-key="${c.key}"` : ""}${active ? ` aria-sort="${sortDir < 0 ? "descending" : "ascending"}"` : ""}>${label}</th>`;
+  }).join("");
 
   const groups = [...APPLICATIONS].filter(([name]) => RESULTS.length && (currentRange === "all" || name === currentRange));
   const [count, unit] = {
@@ -841,14 +938,8 @@ function renderResults() {
   } else if (view === "application") {
     body.innerHTML = groups.map(([name, application]) => applicationGroup(name, application, columns)).join("");
   } else {
-    body.innerHTML = resultRows(view === "attacker" ? ATTACKER_RESULTS : RESULTS, columns);
+    body.innerHTML = resultRows(view === "attacker" ? ATTACKER_RESULTS : RESULTS, columns, view === "attacker");
   }
-
-  head.querySelectorAll("th[data-key]").forEach(th => th.addEventListener("click", () => {
-    const k = th.dataset.key;
-    if (k === sortKey) sortDir *= -1; else { sortKey = k; sortDir = -1; }
-    renderResults();
-  }));
 }
 
 function renderRangeFilter() {
@@ -858,10 +949,44 @@ function renderRangeFilter() {
   select.value = currentRange;
 }
 
-document.getElementById("results-view").addEventListener("change", () => {
+const resultsTabs = [...document.querySelectorAll("#results-tabs [role=tab]")];
+function selectResultsTab(tab) {
+  if (currentView === tab.dataset.view) return;
+  currentView = tab.dataset.view;
+  for (const item of resultsTabs) {
+    item.setAttribute("aria-selected", String(item === tab));
+    item.tabIndex = item === tab ? 0 : -1;
+  }
+  document.getElementById("results-panel").setAttribute("aria-labelledby", tab.id);
   sortKey = "score";
   sortDir = -1;
   renderResults();
+}
+document.getElementById("results-tabs").addEventListener("click", ev => {
+  const tab = ev.target.closest("[role=tab]");
+  if (tab) selectResultsTab(tab);
+});
+document.getElementById("results-tabs").addEventListener("keydown", ev => {
+  const index = resultsTabs.indexOf(ev.target);
+  if (index < 0) return;
+  const last = resultsTabs.length - 1;
+  const target = { ArrowLeft: index === 0 ? last : index - 1, ArrowRight: index === last ? 0 : index + 1,
+    Home: 0, End: last }[ev.key];
+  if (target == null) return;
+  ev.preventDefault();
+  selectResultsTab(resultsTabs[target]);
+  resultsTabs[target].focus();
+});
+
+document.getElementById("results-head").addEventListener("click", ev => {
+  const header = ev.target.closest("th[data-key]");
+  if (!header) return;
+  const key = header.dataset.key;
+  const restoreFocus = document.activeElement === header.querySelector("button");
+  sortDir = key === sortKey ? -sortDir : -1;
+  sortKey = key;
+  renderResults();
+  if (restoreFocus) document.querySelector(`#results-head [data-key="${key}"] button`).focus({ preventScroll: true });
 });
 
 document.getElementById("range-filter").addEventListener("change", ev => {
@@ -869,14 +994,22 @@ document.getElementById("range-filter").addEventListener("change", ev => {
   renderResults();
 });
 
+document.getElementById("results-body").addEventListener("click", ev => {
+  const button = ev.target.closest("button[data-tool]");
+  if (!button) return;
+  const name = button.dataset.tool;
+  const isOpen = !openAttackers.has(name);
+  if (isOpen) openAttackers.add(name);
+  else openAttackers.delete(name);
+  button.setAttribute("aria-expanded", String(isOpen));
+  document.getElementById(button.getAttribute("aria-controls")).hidden = !isOpen;
+});
+
 document.getElementById("results-body").addEventListener("toggle", ev => {
-  const details = ev.target;
-  const { application, attacker } = details.dataset;
-  const name = application || attacker;
+  const name = ev.target.dataset.application;
   if (!name) return;
-  const open = application ? openApplications : openAttackers;
-  if (details.open) open.add(name);
-  else open.delete(name);
+  if (ev.target.open) openApplications.add(name);
+  else openApplications.delete(name);
 }, true);
 
 /* ---------- taxonomy ---------- */
@@ -968,7 +1101,7 @@ function renderRanges(data) {
       loadJSON("data/results.json"),
       loadJSON("data/ranges.json"),
     ]);
-    RESULTS = Array.isArray(results.rounds) ? results.rounds : [];
+    RESULTS = Array.isArray(results.rounds) ? results.rounds.map(withRoundModels) : [];
     if (ranges.benchmark) {
       const v = ranges.benchmark.version, link = document.getElementById("bench-release");
       document.getElementById("bench-version").textContent = `GreyZone ${v}`;
