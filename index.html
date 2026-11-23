@@ -193,7 +193,7 @@
     font-size: 0.6875rem; font-weight: 600; line-height: 1.5;
     font-variant-numeric: tabular-nums;
   }
-  .overview { max-width: 60rem; }
+  .overview { max-width: 64rem; }
   .overview h3 {
     margin: 0 0 0.5rem;
     font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.01em;
@@ -203,7 +203,7 @@
   .overview ul { margin: 0; padding-left: 1.25rem; }
   .overview li { margin-bottom: 0.4rem; }
   .overview strong, .overview li b { font-weight: 600; color: var(--text); }
-  .overview-figure { margin: 1.75rem 0 0; }
+  .overview-figure { width: min(92%, 76rem); margin: 1.75rem auto 0; }
   .overview-figure img {
     display: block; width: 100%; height: auto;
     padding: 1rem 1.25rem;
@@ -475,6 +475,7 @@
   @media (max-width: 700px) {
     .taxonomy-cards { grid-template-columns: 1fr; }
     .paper-layout { grid-template-columns: 1fr; gap: 1.5rem; }
+    .overview-figure { width: 100%; }
     .overview-figure img { padding: 0.5rem; }
     .stats { gap: 1.5rem; }
     .container { padding: 0 12px; }
