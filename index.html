@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GreyZone — Red-Team Leaderboard</title>
+<title>GreyZone Leaderboard</title>
 <meta name="description" content="A benchmark of 10 threat ranges for red-teaming LLM agents in real applications.">
 <style>
   /* Design language follows the SWE-bench leaderboard family: off-white page,
@@ -87,8 +87,8 @@
   .navlinks a:hover { color: #fff; }
   .page-header h1 {
     margin: 0;
-    font-size: 1.875rem; font-weight: 600;
-    letter-spacing: -0.015em;
+    font-size: clamp(1.625rem, 8vw, 3.25rem); font-weight: 700; line-height: 1.15;
+    text-align: center; letter-spacing: -0.025em;
     color: var(--header-cream);
   }
   .page-header .header-sub {
@@ -105,12 +105,12 @@
     padding: 0.75rem 1.25rem;
     border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: var(--radius-xl);
-    background-color: #123465;
+    background-color: #107cbd;
     color: #fff;
     font: inherit; font-size: 1.125rem; font-weight: 600; line-height: 1.25;
     transition: background-color 0.15s ease;
   }
-  .hero-links > :is(a, button):hover { background-color: #19467f; }
+  .hero-links > :is(a, button):hover { background-color: #0d6eab; }
   .hero-links > :is(a, button):focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
   .hero-links button { cursor: pointer; }
   .stats { display: flex; flex-wrap: wrap; gap: 2.25rem; margin-top: 1.5rem; }
@@ -436,7 +436,6 @@
     .paper-layout { grid-template-columns: 1fr; gap: 1.5rem; }
     .overview-figure img { padding: 0.5rem; }
     .stats { gap: 1.5rem; }
-    .page-header h1 { font-size: 1.5rem; }
     .container { padding: 0 16px; }
   }
   @media (max-width: 600px) {
@@ -459,7 +458,7 @@
         <a href="#submit">Submit</a>
       </div>
     </nav>
-    <h1>Red-Team Leaderboard</h1>
+    <h1>GreyZone Leaderboard</h1>
     <p class="header-sub">Automated red-teaming services, evaluated end-to-end against real upstream agent applications — every outcome verified by a mechanical oracle.</p>
     <div class="hero-links">
       <a href="https://arxiv.org/abs/2611.09161" target="_blank" rel="noopener">Paper</a>
