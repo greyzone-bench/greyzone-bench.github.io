@@ -265,7 +265,7 @@ class BuildSubmissionTests(unittest.TestCase):
             for i, evaluation in enumerate(doc["episodes"], 1):
                 (raw / f"result-{i}.json").write_text(json.dumps({"evaluation": evaluation}))
             output = root / "campaign.json"
-            args = ["build_submission.py", "--results", str(raw),
+            args = ["build_submission.py", "--repeat", "2", "--results", str(raw),
                     "--framework", "pyrit", "--framework-version", "0.9.0", "--adapter", "custom",
                     "--attacker-model", "fixture-attacker",
                     "--submitted-by", "fixture-lab", "--artifacts", "https://example.org/fixture-logs",
@@ -277,6 +277,7 @@ class BuildSubmissionTests(unittest.TestCase):
                     with patch("sys.argv", args + extra_args), redirect_stdout(io.StringIO()):
                         self.assertEqual(build_submission.main(), 0)
                     result = json.loads(output.read_text())
+                    self.assertEqual(result["repeat"], 2)
                     self.assertEqual(result["budget"], {"maxTurns": {"direct": 5, "indirect": indirect}})
                     self.assertEqual(sum(map(len, result["scenarios"].values())), 46)
                     statuses = [e["status"] for e in result["scenarios"]["kubectl-ai"].values() if e]
@@ -357,6 +358,7 @@ class ContractTests(unittest.TestCase):
             doc["scenarios"][name][scenario] = episode(name, scenario, i, status=status, success=True)
         submissions.check_submission(doc)
         row = submissions.round_row("fixture-round", doc)
+        self.assertEqual(row["repeat"], doc["repeat"])
         self.assertEqual(row["metrics"]["score"], 1)
         self.assertEqual(row["metrics"]["missing"], 43)
         self.assertEqual(row["applications"][name]["score"], 1)
@@ -370,6 +372,29 @@ class ContractTests(unittest.TestCase):
         scenario = submissions.RANGES[name]["scenarios"][0]["id"]
         with self.assertRaisesRegex(submissions.Invalid, "more than one evaluation"):
             submissions.round_slots([episode(name, scenario, 1), episode(name, scenario, 2)])
+
+    def test_round_requires_a_positive_number(self):
+        doc = json.loads((ROOT / "schemas" / "round-submission.example.json").read_text())
+        for value in (0, -1, True, "1", 1.5, None):
+            with self.subTest(repeat=value), self.assertRaisesRegex(submissions.Invalid, "positive integer"):
+                submissions.check_submission(dict(doc, repeat=value))
+        del doc["repeat"]
+        with self.assertRaisesRegex(submissions.Invalid, "missing repeat"):
+            submissions.check_submission(doc)
+
+    def test_round_number_is_unique_per_submitter_and_tool(self):
+        doc = json.loads((ROOT / "schemas" / "round-submission.example.json").read_text())
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            (folder / "first.json").write_text(json.dumps(doc))
+            second = folder / "second.json"
+            second.write_text(json.dumps(dict(doc, submittedBy=doc["submittedBy"].upper())))
+            with patch.object(submissions, "SUBMISSIONS_DIR", folder), redirect_stdout(io.StringIO()) as out:
+                with self.assertRaises(SystemExit):
+                    submissions.merge()
+                self.assertIn("repeat 1 is already used by first", out.getvalue())
+                second.write_text(json.dumps(dict(doc, submittedBy="another-lab")))
+                self.assertEqual(len(submissions.merge()["rounds"]), 2)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 {
   "submissionVersion": 3,
+  "repeat": 1,
   "benchmark": {
     "version": "v1.0.1",
     "revision": "bcc42f13"

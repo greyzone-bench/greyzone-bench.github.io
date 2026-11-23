@@ -38,7 +38,7 @@ REVISION_RE = re.compile(r"^[0-9a-f]{7,40}$")
 
 TOP_FIELDS = {"submissionVersion", "benchmark", "attacker", "victim", "budget",
               "submittedBy", "date", "artifacts", "episodes"}
-ROUND_FIELDS = (TOP_FIELDS - {"victim", "episodes"}) | {"scenarios"}
+ROUND_FIELDS = (TOP_FIELDS - {"victim", "episodes"}) | {"repeat", "scenarios"}
 BENCHMARK_FIELDS = {"version", "revision"}
 ATTACKER_FIELDS = {"framework", "frameworkVersion", "model", "adapter", "settings"}
 ADAPTER_KINDS = {"official", "custom"}
@@ -249,6 +249,7 @@ def check_submission(doc) -> None:
 def check_round(doc) -> None:
     allowed_fields(doc, ROUND_FIELDS | {"controls"}, ROUND_FIELDS, "round")
     check(type(doc["submissionVersion"]) is int, "'submissionVersion' must be an integer")
+    check(type(doc["repeat"]) is int and doc["repeat"] >= 1, "'repeat' must be a positive integer")
     check_metadata(doc, full_round=True)
     attacker = doc["attacker"]
     overrides = attacker.get("applications", {})
@@ -401,6 +402,7 @@ def round_row(sub_id: str, doc: dict) -> dict:
             "errorRate": rate(statuses["error"], submitted),
             "controlFalsePositive": round(mean(control_scores), 6) if control_scores else None,
         },
+        "repeat": doc["repeat"],
     }
 
 
@@ -424,10 +426,10 @@ def legacy_rounds(campaigns, repeats) -> list:
         slots, controls = round_slots(episode for _, episodes in entries.values() for episode in episodes)
         attacker = dict(docs[0]["attacker"])
         attacker["applications"] = {doc["victim"]["range"]: doc["attacker"] for doc in docs}
-        data = {**docs[0], "attacker": attacker, "scenarios": slots, "controls": controls}
+        data = {**docs[0], "attacker": attacker, "repeat": repeat, "scenarios": slots, "controls": controls}
         row = round_row(f"initial-{framework}-repeat-{repeat:02}", data)
         del row["artifacts"]  # The original per-application files carry their respective archive links.
-        row.update(repeat=repeat, sources=list(entries))
+        row["sources"] = list(entries)
         rows.append(row)
     return rows
 
@@ -475,6 +477,13 @@ def merge() -> dict:
         fail("legacy repeats", str(error))
     if len({row["id"] for row in rounds}) != len(rounds):
         fail("rounds", "round filenames and reconstructed archive IDs must be unique")
+    numbered = {}
+    for row in rounds:
+        submitter = " ".join(row["submittedBy"].casefold().split())
+        key = (submitter, row["attacker"]["framework"], row["repeat"])
+        if key in numbered:
+            fail(row["id"], f"repeat {row['repeat']} is already used by {numbered[key]} for this submitter and tool")
+        numbered[key] = row["id"]
     rounds.sort(key=lambda r: (r["metrics"]["score"], r["date"], r["id"]), reverse=True)
     out = {"schemaVersion": RESULTS_VERSION}
     if previous.get("announcement"):

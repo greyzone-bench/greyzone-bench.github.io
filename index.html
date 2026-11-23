@@ -334,6 +334,8 @@
     overflow-wrap: anywhere;
   }
   .scenario-scores tr:last-child th[scope="row"] { border-bottom: none; }
+  .attacker-rounds ul { margin: 0.45rem 0 0; padding-left: 1rem; line-height: 1.65; }
+  .attacker-rounds li strong { font-variant-numeric: tabular-nums; }
   .cta { font-weight: 500; }
 
   /* ranges cells */
@@ -549,7 +551,7 @@
           <select id="results-view" aria-controls="results-table">
             <option value="attacker">By attacker</option>
             <option value="application">By application</option>
-            <option value="submissions">Submissions</option>
+            <option value="submissions">By round</option>
           </select>
         </label>
         <label class="range-filter" id="range-control" hidden>Application
@@ -566,7 +568,7 @@
     </div>
 
     <p class="legend" id="attacker-legend">
-      <b>Average score</b> — the mean of the framework's round totals. Each round has one point available per benchmark scenario. Missing and unscored scenarios contribute zero.
+      <b>Average score</b> — the mean of the framework's round totals. Expand an attacker to see each numbered round. Missing and unscored scenarios contribute zero.
     </p>
     <p class="legend" id="application-legend" hidden>
       <b>Average score</b> — the mean of the framework's application subtotals across benchmark rounds. Expand an application to see the average for each scenario.
@@ -618,7 +620,7 @@
     </div>
     <ol class="steps">
       <li>Run the attack scenarios in <a id="bench-release" href="https://github.com/Ruoyyy/GreyZone/releases/tag/v1.0.1" target="_blank" rel="noopener">GreyZone v1.0.1</a> with the fixed victim models. Provide one Oracle evaluation per scenario and its evidence. Leave unavailable results as <code>null</code> for zero points.</li>
-      <li>Build the round file with <code>python3 scripts/build_submission.py --results … --out data/submissions/&lt;round-id&gt;.json</code>. Set <code>--max-turns-direct</code> and <code>--max-turns-indirect</code>. The builder fills missing slots and prints the total. Pass <code>--omit-errors</code> to record error slots as missing.</li>
+      <li>Build the round file with <code>python3 scripts/build_submission.py --repeat 1 --results … --out data/submissions/&lt;round-id&gt;.json</code>. Set a unique round number for your tool, along with <code>--max-turns-direct</code> and <code>--max-turns-indirect</code>. The builder fills missing slots and prints the total. Pass <code>--omit-errors</code> to record error slots as missing.</li>
       <li>Click <b>Create submission</b>, paste the generated file over the template and keep its file name, then <b>Commit changes…</b> → <b>Propose changes</b> → <b>Create pull request</b>. GitHub forks the repository for you; fill in the pull request template.</li>
     </ol>
     <div class="submit-actions">
@@ -706,21 +708,25 @@ const METRICS = [
 const RANK = { key: "rank", label: "#", num: true, render: () => "", sort: null };
 const FRAMEWORK = { key: "framework", label: "Attacker",
   render: r => `<span class="framework">${esc(r.framework)}</span>`, sort: r => r.framework };
+const FRAMEWORK_ROUNDS = { ...FRAMEWORK, render: r => {
+  const showSubmitter = new Set(r.rounds.map(round => round.submittedBy)).size > 1;
+  const scores = r.rounds.map(round => `<li>Round ${round.repeat} <strong>${M(round).score.toFixed(2)} / ${r.maxScore}</strong>${
+    showSubmitter ? ` <span class="model">${esc(round.submittedBy)}</span>` : ""}</li>`).join("");
+  return `<details class="attacker-rounds" data-attacker="${esc(r.framework)}"${openAttackers.has(r.framework) ? " open" : ""}>
+    <summary>${FRAMEWORK.render(r)}</summary><ul>${scores}</ul></details>`;
+} };
 const AVERAGE = { key: "score", label: "Average score", num: true, render: r => meter(r.score, r.maxScore), sort: r => r.score };
 const REPEATS = { key: "repeats", label: "Rounds", num: true, render: r => r.roundCount, sort: r => r.roundCount };
-const ROUND_SCORES = { key: "roundScores", label: "Round scores", num: true,
-  render: r => r.rounds.map(round => `<span class="nowrap" title="${esc(roundTitle(round))}">${M(round).score.toFixed(2)}</span>`).join(" · ") };
-function roundTitle(r) {
-  return r.repeat ? `Repeat ${r.repeat}` : r.id;
-}
-const SUBMISSION = { key: "id", label: "Submission",
+const ROUND = { key: "repeat", label: "Round", num: true, render: r => r.repeat, sort: r => r.repeat };
+const SUBMITTER = { key: "submitter", label: "Submitter", render: r => esc(r.submittedBy), sort: r => r.submittedBy, cls: "hide-sm" };
+const SUBMISSION = { key: "id", label: "Source files",
   render: r => r.sources
-    ? `<details><summary>${esc(roundTitle(r))}</summary>${r.sources.map(id => `<div><a href="data/submissions/${encodeURIComponent(id)}.json">${esc(id)}</a></div>`).join("")}</details>`
+    ? `<details><summary>Archive files</summary>${r.sources.map(id => `<div><a href="data/submissions/${encodeURIComponent(id)}.json">${esc(id)}</a></div>`).join("")}</details>`
     : `<a href="data/submissions/${encodeURIComponent(r.id)}.json">${esc(r.id)}</a>`, sort: r => r.id };
 const VIEWS = {
-  attacker: [RANK, FRAMEWORK, AVERAGE, ROUND_SCORES, REPEATS],
+  attacker: [RANK, FRAMEWORK_ROUNDS, AVERAGE, REPEATS],
   application: [RANK, FRAMEWORK, AVERAGE, REPEATS],
-  submissions: [RANK, ATTACKER, ...METRICS, SUBMISSION],
+  submissions: [RANK, ATTACKER, ROUND, ...METRICS, SUBMITTER, SUBMISSION],
 };
 
 let currentRange = "all";
@@ -731,6 +737,7 @@ let APPLICATIONS = new Map();
 let ATTACKER_RESULTS = [];
 let totalScenarios = 0;
 const openApplications = new Set();
+const openAttackers = new Set();
 
 function applicationAverages(rounds, name, maxScore) {
   const byFramework = new Map();
@@ -763,7 +770,7 @@ function attackerAverages(rounds) {
     byFramework.get(framework).push(round);
   }
   return [...byFramework].map(([framework, entries]) => {
-    entries.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+    entries.sort((a, b) => a.submittedBy.localeCompare(b.submittedBy) || a.repeat - b.repeat);
     const score = entries.reduce((sum, round) => sum + M(round).score, 0) / entries.length;
     return { framework, rounds: entries, score, roundCount: entries.length, maxScore: totalScenarios };
   });
@@ -883,9 +890,12 @@ document.getElementById("range-filter").addEventListener("change", ev => {
 
 document.getElementById("results-body").addEventListener("toggle", ev => {
   const details = ev.target;
-  if (!details.matches("details[data-application]")) return;
-  if (details.open) openApplications.add(details.dataset.application);
-  else openApplications.delete(details.dataset.application);
+  const { application, attacker } = details.dataset;
+  const name = application || attacker;
+  if (!name) return;
+  const open = application ? openApplications : openAttackers;
+  if (details.open) open.add(name);
+  else open.delete(name);
 }, true);
 
 /* ---------- taxonomy ---------- */
@@ -911,6 +921,7 @@ function renderSubmitLinks(ranges) {
     [dir, Object.fromEntries(scenarios.map(({ id }) => [id, null]))]));
   const template = {
     submissionVersion: 3,
+    repeat: 1,
     benchmark: { version: ranges.benchmark.version },
     attacker: { framework: "promptfoo", frameworkVersion: "0.122.2", model: "your-attacker-model", adapter: "custom" },
     budget: { maxTurns: { direct: 5, indirect: 10 } },

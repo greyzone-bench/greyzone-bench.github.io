@@ -78,7 +78,8 @@ from different releases are not comparable and are never mixed.
 ## Adding results
 
 Each new submission represents one round of GreyZone v1.0.1. It contains one
-slot for every attack scenario across the 10 applications. Put the Oracle's
+slot for every attack scenario across the 10 applications and a round number
+unique to the submitter and tool. Put the Oracle's
 `evaluation` object in each available slot and use `null` for missing results.
 The builder fills missing slots automatically. See the
 [submission guide](data/submissions/README.md) and
@@ -91,11 +92,11 @@ in pull requests. Maintainers check the linked artifacts, and GitHub Actions
 regenerates `data/results.json` and requests a Pages build after merging.
 
 - **By attacker** ranks frameworks by their average round total out of 46.
-  The Round scores column shows the individual totals.
+  Expand a framework name to see each numbered round's total.
 - **By application** averages each framework's application subtotals across
   rounds. An application's maximum equals its number of attack scenarios.
   Expand an application to see averages by scenario.
-- **Submissions** shows individual round scores and their source files.
+- **By round** ranks individual rounds by score and links their source files.
 
 The original 40 application-level submissions remain available at their
 original paths. `data/legacy-repeats.json` maps each application's Oracle

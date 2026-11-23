@@ -22,6 +22,11 @@
         3
       ]
     },
+    "repeat": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Round number for this submitter and tool, starting at 1."
+    },
     "benchmark": {
       "type": "object",
       "additionalProperties": false,
@@ -521,6 +526,11 @@
           "anyOf": [
             {
               "required": [
+                "repeat"
+              ]
+            },
+            {
+              "required": [
                 "scenarios"
               ]
             },
@@ -543,6 +553,7 @@
       },
       "else": {
         "required": [
+          "repeat",
           "scenarios"
         ],
         "not": {

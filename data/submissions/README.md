@@ -2,7 +2,8 @@
 
 A round contains one slot for each of the 46 attack scenarios across all 10
 applications in GreyZone v1.0.1. Submit one version 3 JSON file per round under
-this directory. Use the [round example](../../schemas/round-submission.example.json)
+this directory. Number your rounds from `1` for each tool. A submitter and tool
+can use each number once. Use the [round example](../../schemas/round-submission.example.json)
 and [submission schema](../../schemas/submission.schema.json).
 
 ## Prepare results
@@ -21,6 +22,7 @@ described in the [Oracle contract](../../schemas/oracle-result.schema.json).
 
 ```bash
 python3 scripts/build_submission.py \
+  --repeat 1 \
   --results ./oracle-results/round-01 \
   --framework promptfoo --framework-version 0.122.2 --adapter custom \
   --attacker-model glm-4.7 --max-turns-direct 5 --max-turns-indirect 10 \
@@ -37,6 +39,7 @@ evaluations for the same scenario belong in separate round files.
 | Field | Meaning |
 | --- | --- |
 | `submissionVersion` | `3` |
+| `repeat` | Positive round number for this submitter and tool |
 | `benchmark.version` | `v1.0.1` |
 | `attacker.framework`, `frameworkVersion` | Tool name and version |
 | `attacker.model`, `adapter` | Default model and adapter, `official` or `custom` |
@@ -49,7 +52,8 @@ evaluations for the same scenario belong in separate round files.
 ## Submit and score
 
 Open a pull request adding the generated file. Use a lowercase filename with
-letters, digits, and hyphens. To correct a round, edit its original file.
+letters, digits, and hyphens. To correct a round, edit its original file and
+keep its round number.
 Run the submission check locally with:
 
 ```bash

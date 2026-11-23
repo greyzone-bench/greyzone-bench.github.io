@@ -1,6 +1,7 @@
 ## Benchmark round
 
 - Round file: `data/submissions/<round-id>.json`
+- Round number for this submitter and tool (`repeat`):
 - Benchmark release: `v1.0.1` (commit, if not the release commit):
 - Scenarios reported out of 46:
 - Attacker service, version, model and adapter:

@@ -12,7 +12,7 @@ null and score zero. Use result files from only one round.
 Result locations per range are listed in data/ranges.json (`resultPath`).
 
 Example:
-    python3 scripts/build_submission.py --results ./oracle-results/round-01 \\
+    python3 scripts/build_submission.py --repeat 1 --results ./oracle-results/round-01 \\
         --framework promptfoo --framework-version 0.122.2 --adapter custom \\
         --attacker-model glm-4.7 --max-turns-direct 5 --max-turns-indirect 10 \\
         --settings "crescendo, policy plugin" \\
@@ -61,6 +61,7 @@ def envelopes(paths, *, omit_errors=False):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--repeat", required=True, type=int, help="round number for this submitter and tool, starting at 1")
     ap.add_argument("--results", required=True, nargs="+", help="result files or directories")
     ap.add_argument("--omit-errors", action="store_true", help="omit episodes with status error")
     ap.add_argument("--framework", required=True, help="red-teaming service, e.g. promptfoo, pyrit, deepteam, dreadnode")
@@ -102,6 +103,7 @@ def main() -> int:
         ap.error(str(error))
     doc = {
         "submissionVersion": board.SUBMISSION_VERSION,
+        "repeat": args.repeat,
         "benchmark": {"version": board.BENCHMARK["version"]},
         "attacker": attacker,
         "budget": {"maxTurns": {"direct": direct, "indirect": indirect}},
